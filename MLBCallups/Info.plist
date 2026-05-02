@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
+	<key>CFBundleDisplayName</key>
+	<string>Rookie Callups</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.sports</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
