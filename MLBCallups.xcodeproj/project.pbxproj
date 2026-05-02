@@ -6,19 +6,107 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0100E7072FA58CE600F70F32 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7062FA58CE600F70F32 /* WidgetKit.framework */; };
+		0100E7092FA58CE600F70F32 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7082FA58CE600F70F32 /* SwiftUI.framework */; };
+		0100E7182FA58CE600F70F32 /* CallupWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		01A0B4C82F49149E00C6E960 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4C72F49149E00C6E960 /* Transaction.swift */; };
+		01A0B4CA2F4914AF00C6E960 /* PlayerInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4C92F4914AF00C6E960 /* PlayerInfo.swift */; };
+		01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CB2F4914C000C6E960 /* CareerStats.swift */; };
+		01A0B4CE2F4914DB00C6E960 /* PlayerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */; };
+		01A0B4D02F49151400C6E960 /* MLBAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */; };
+		01A0B4D22F49152100C6E960 /* TrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */; };
+		01A0B4D42F49152D00C6E960 /* PlayerCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */; };
+		01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D52F49153B00C6E960 /* StatsGridView.swift */; };
+		01A0B4D82F49154B00C6E960 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0100E7162FA58CE600F70F32 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 01A0B4AD2F4912C200C6E960 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0100E7032FA58CE600F70F32;
+			remoteInfo = CallupWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0100E71D2FA58CE600F70F32 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				0100E7182FA58CE600F70F32 /* CallupWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CallupWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0100E7062FA58CE600F70F32 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		0100E7082FA58CE600F70F32 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		01A0B4B52F4912C200C6E960 /* MLBCallups.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MLBCallups.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01A0B4C72F49149E00C6E960 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
+		01A0B4C92F4914AF00C6E960 /* PlayerInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerInfo.swift; sourceTree = "<group>"; };
+		01A0B4CB2F4914C000C6E960 /* CareerStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerStats.swift; sourceTree = "<group>"; };
+		01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCard.swift; sourceTree = "<group>"; };
+		01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLBAPIClient.swift; sourceTree = "<group>"; };
+		01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerViewModel.swift; sourceTree = "<group>"; };
+		01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCardView.swift; sourceTree = "<group>"; };
+		01A0B4D52F49153B00C6E960 /* StatsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsGridView.swift; sourceTree = "<group>"; };
+		01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0100E71C2FA58CE600F70F32 /* Exceptions for "CallupWidget" folder in "CallupWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0100E7032FA58CE600F70F32 /* CallupWidgetExtension */;
+		};
+		010297692F496A1E002B7D56 /* Exceptions for "MLBCallups" folder in "MLBCallups" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 01A0B4B42F4912C200C6E960 /* MLBCallups */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		0100E70A2FA58CE600F70F32 /* CallupWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0100E71C2FA58CE600F70F32 /* Exceptions for "CallupWidget" folder in "CallupWidgetExtension" target */,
+			);
+			path = CallupWidget;
+			sourceTree = "<group>";
+		};
 		01A0B4B72F4912C200C6E960 /* MLBCallups */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				010297692F496A1E002B7D56 /* Exceptions for "MLBCallups" folder in "MLBCallups" target */,
+			);
 			path = MLBCallups;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0100E7012FA58CE600F70F32 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0100E7092FA58CE600F70F32 /* SwiftUI.framework in Frameworks */,
+				0100E7072FA58CE600F70F32 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		01A0B4B22F4912C200C6E960 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -29,10 +117,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0100E7052FA58CE600F70F32 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0100E7062FA58CE600F70F32 /* WidgetKit.framework */,
+				0100E7082FA58CE600F70F32 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		01A0B4AC2F4912C200C6E960 = {
 			isa = PBXGroup;
 			children = (
+				01A0B4C62F49145500C6E960 /* Views */,
+				01A0B4C52F49144D00C6E960 /* ViewModels */,
+				01A0B4C42F49144600C6E960 /* Networking */,
+				01A0B4C32F49143000C6E960 /* Models */,
 				01A0B4B72F4912C200C6E960 /* MLBCallups */,
+				0100E70A2FA58CE600F70F32 /* CallupWidget */,
+				0100E7052FA58CE600F70F32 /* Frameworks */,
 				01A0B4B62F4912C200C6E960 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,13 +144,73 @@
 			isa = PBXGroup;
 			children = (
 				01A0B4B52F4912C200C6E960 /* MLBCallups.app */,
+				0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		01A0B4C32F49143000C6E960 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				01A0B4C72F49149E00C6E960 /* Transaction.swift */,
+				01A0B4C92F4914AF00C6E960 /* PlayerInfo.swift */,
+				01A0B4CB2F4914C000C6E960 /* CareerStats.swift */,
+				01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		01A0B4C42F49144600C6E960 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		01A0B4C52F49144D00C6E960 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		01A0B4C62F49145500C6E960 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */,
+				01A0B4D52F49153B00C6E960 /* StatsGridView.swift */,
+				01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0100E7032FA58CE600F70F32 /* CallupWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0100E7192FA58CE600F70F32 /* Build configuration list for PBXNativeTarget "CallupWidgetExtension" */;
+			buildPhases = (
+				0100E7002FA58CE600F70F32 /* Sources */,
+				0100E7012FA58CE600F70F32 /* Frameworks */,
+				0100E7022FA58CE600F70F32 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0100E70A2FA58CE600F70F32 /* CallupWidget */,
+			);
+			name = CallupWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = CallupWidgetExtension;
+			productReference = 0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		01A0B4B42F4912C200C6E960 /* MLBCallups */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 01A0B4C02F4912C300C6E960 /* Build configuration list for PBXNativeTarget "MLBCallups" */;
@@ -55,10 +218,12 @@
 				01A0B4B12F4912C200C6E960 /* Sources */,
 				01A0B4B22F4912C200C6E960 /* Frameworks */,
 				01A0B4B32F4912C200C6E960 /* Resources */,
+				0100E71D2FA58CE600F70F32 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				0100E7172FA58CE600F70F32 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				01A0B4B72F4912C200C6E960 /* MLBCallups */,
@@ -77,9 +242,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					0100E7032FA58CE600F70F32 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
 					01A0B4B42F4912C200C6E960 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -100,11 +268,19 @@
 			projectRoot = "";
 			targets = (
 				01A0B4B42F4912C200C6E960 /* MLBCallups */,
+				0100E7032FA58CE600F70F32 /* CallupWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		0100E7022FA58CE600F70F32 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		01A0B4B32F4912C200C6E960 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,16 +291,106 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		01A0B4B12F4912C200C6E960 /* Sources */ = {
+		0100E7002FA58CE600F70F32 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		01A0B4B12F4912C200C6E960 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				01A0B4D42F49152D00C6E960 /* PlayerCardView.swift in Sources */,
+				01A0B4CA2F4914AF00C6E960 /* PlayerInfo.swift in Sources */,
+				01A0B4D22F49152100C6E960 /* TrackerViewModel.swift in Sources */,
+				01A0B4D02F49151400C6E960 /* MLBAPIClient.swift in Sources */,
+				01A0B4CE2F4914DB00C6E960 /* PlayerCard.swift in Sources */,
+				01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */,
+				01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */,
+				01A0B4C82F49149E00C6E960 /* Transaction.swift in Sources */,
+				01A0B4D82F49154B00C6E960 /* EmptyStateView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		0100E7172FA58CE600F70F32 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 0100E7032FA58CE600F70F32 /* CallupWidgetExtension */;
+			targetProxy = 0100E7162FA58CE600F70F32 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0100E71A2FA58CE600F70F32 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VKMPP3AW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CallupWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0100E71B2FA58CE600F70F32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VKMPP3AW2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CallupWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		01A0B4BE2F4912C300C6E960 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -244,12 +510,26 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MLBCallups/MLBCallups.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VKMPP3AW2;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MLBCallups/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -260,10 +540,10 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -286,12 +566,26 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MLBCallups/MLBCallups.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8VKMPP3AW2;
 				ENABLE_APP_SANDBOX = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MLBCallups/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -302,10 +596,10 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -326,6 +620,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0100E7192FA58CE600F70F32 /* Build configuration list for PBXNativeTarget "CallupWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0100E71A2FA58CE600F70F32 /* Debug */,
+				0100E71B2FA58CE600F70F32 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		01A0B4B02F4912C200C6E960 /* Build configuration list for PBXProject "MLBCallups" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

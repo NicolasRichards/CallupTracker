@@ -12,16 +12,13 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
 
-
     private var gridColumns: [GridItem] {
         #if os(macOS)
         return [GridItem(.adaptive(minimum: 280, maximum: 360), spacing: 12)]
         #else
         if horizontalSizeClass == .compact {
-            // iPhone — single column
             return [GridItem(.flexible())]
         } else {
-            // iPad portrait = 2 columns, landscape = 3 columns
             return [GridItem(.adaptive(minimum: 300, maximum: 500), spacing: 12)]
         }
         #endif
@@ -41,9 +38,10 @@ struct ContentView: View {
             if phase == .active { viewModel.loadCards() }
         }
     }
-    
+
     @ViewBuilder
     private var contentArea: some View {
+        let displayed = viewModel.filteredCards
         switch viewModel.loadingState {
         case .loading:
             ProgressView("Loading call-ups…")
@@ -68,41 +66,50 @@ struct ContentView: View {
             }
 
         case .loaded:
-            #if os(iOS)
-            if horizontalSizeClass == .compact {
-                List(viewModel.cards) { card in
-                    PlayerCardView(card: card)
-                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+            if displayed.isEmpty {
+                ScrollView {
+                    EmptyStateView(
+                        icon: "person.crop.circle.badge.questionmark",
+                        title: "No call-ups for \(viewModel.selectedTeam?.abbreviation ?? "this team")",
+                        message: "No rookie-eligible players from \(viewModel.selectedTeam?.name ?? "this team") were called up on \(viewModel.displayDate)."
+                    )
                 }
-                .listStyle(.plain)
             } else {
+                #if os(iOS)
+                if horizontalSizeClass == .compact {
+                    List(displayed) { card in
+                        PlayerCardView(card: card)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    .listStyle(.plain)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: gridColumns, spacing: 12) {
+                            ForEach(displayed) { card in
+                                PlayerCardView(card: card)
+                            }
+                        }
+                        .padding(16)
+                    }
+                }
+                #else
                 ScrollView {
                     LazyVGrid(columns: gridColumns, spacing: 12) {
-                        ForEach(viewModel.cards) { card in
+                        ForEach(displayed) { card in
                             PlayerCardView(card: card)
                         }
                     }
                     .padding(16)
                 }
+                #endif
             }
-            #else
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 12) {
-                    ForEach(viewModel.cards) { card in
-                        PlayerCardView(card: card)
-                    }
-                }
-                .padding(16)
-            }
-            #endif
 
         case .idle:
             Spacer()
         }
     }
-
 
     private var dateNavBar: some View {
         HStack(spacing: 10) {
@@ -118,11 +125,7 @@ struct ContentView: View {
                 displayedComponents: .date
             )
             .labelsHidden()
-            #if os(macOS)
             .datePickerStyle(.compact)
-            #else
-            .datePickerStyle(.compact)
-            #endif
             .onChange(of: viewModel.selectedDate) { _ in
                 viewModel.loadCards()
             }
@@ -139,8 +142,44 @@ struct ContentView: View {
 
             Spacer()
 
+            // Team filter
+            Menu {
+                Button {
+                    viewModel.selectedTeamID = nil
+                } label: {
+                    if viewModel.selectedTeamID == nil {
+                        Label("All Teams", systemImage: "checkmark")
+                    } else {
+                        Text("All Teams")
+                    }
+                }
+                Divider()
+                ForEach(MLBAPIClient.allTeams) { team in
+                    Button {
+                        viewModel.selectedTeamID = team.id
+                    } label: {
+                        if viewModel.selectedTeamID == team.id {
+                            Label(team.name, systemImage: "checkmark")
+                        } else {
+                            Text(team.name)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "line.3.horizontal.decrease.circle\(viewModel.selectedTeamID != nil ? ".fill" : "")")
+                    if let team = viewModel.selectedTeam {
+                        Text(team.abbreviation)
+                            .font(.caption.bold())
+                    }
+                }
+                .foregroundStyle(viewModel.selectedTeamID != nil ? Color.accentColor : Color.secondary)
+            }
+            .buttonStyle(.bordered)
+
             if case .loaded = viewModel.loadingState {
-                Text("\(viewModel.cards.count) call-up\(viewModel.cards.count == 1 ? "" : "s")")
+                let count = viewModel.filteredCards.count
+                Text("\(count) call-up\(count == 1 ? "" : "s")")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -149,4 +188,3 @@ struct ContentView: View {
         .padding(.vertical, 10)
     }
 }
-
