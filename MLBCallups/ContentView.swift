@@ -136,10 +136,6 @@ struct ContentView: View {
             .buttonStyle(.bordered)
             .disabled(viewModel.isAtToday)
 
-            Text(viewModel.displayDate)
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
             Spacer()
 
             // Team filter
