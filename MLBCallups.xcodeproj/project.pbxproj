@@ -49,6 +49,7 @@
 		0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CallupWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0100E7062FA58CE600F70F32 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		0100E7082FA58CE600F70F32 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		017B6F932FA6D78800A51F59 /* CallupWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CallupWidgetExtension.entitlements; sourceTree = "<group>"; };
 		01A0B4B52F4912C200C6E960 /* MLBCallups.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MLBCallups.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		01A0B4C72F49149E00C6E960 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
 		01A0B4C92F4914AF00C6E960 /* PlayerInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerInfo.swift; sourceTree = "<group>"; };
@@ -129,6 +130,7 @@
 		01A0B4AC2F4912C200C6E960 = {
 			isa = PBXGroup;
 			children = (
+				017B6F932FA6D78800A51F59 /* CallupWidgetExtension.entitlements */,
 				01A0B4C62F49145500C6E960 /* Views */,
 				01A0B4C52F49144D00C6E960 /* ViewModels */,
 				01A0B4C42F49144600C6E960 /* Networking */,
@@ -331,6 +333,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -362,6 +365,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
