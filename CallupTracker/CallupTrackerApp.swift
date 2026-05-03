@@ -1,6 +1,6 @@
 //
-//  MLBCallupsApp.swift
-//  MLBCallups
+//  CallupTrackerApp.swift
+//  CallupTracker
 //
 //  Created by Nicolas Richards on 2/20/26.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct MLBCallupsApp: App {
+struct CallupTrackerApp: App {
 
     init() {
         #if os(iOS)

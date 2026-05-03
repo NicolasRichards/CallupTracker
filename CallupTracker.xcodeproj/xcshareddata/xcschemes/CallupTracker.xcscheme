@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "01A0B4B42F4912C200C6E960"
-               BuildableName = "MLBCallups.app"
-               BlueprintName = "MLBCallups"
-               ReferencedContainer = "container:MLBCallups.xcodeproj">
+               BuildableName = "CallupTracker.app"
+               BlueprintName = "CallupTracker"
+               ReferencedContainer = "container:CallupTracker.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01A0B4B42F4912C200C6E960"
-            BuildableName = "MLBCallups.app"
-            BlueprintName = "MLBCallups"
-            ReferencedContainer = "container:MLBCallups.xcodeproj">
+            BuildableName = "CallupTracker.app"
+            BlueprintName = "CallupTracker"
+            ReferencedContainer = "container:CallupTracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "01A0B4B42F4912C200C6E960"
-            BuildableName = "MLBCallups.app"
-            BlueprintName = "MLBCallups"
-            ReferencedContainer = "container:MLBCallups.xcodeproj">
+            BuildableName = "CallupTracker.app"
+            BlueprintName = "CallupTracker"
+            ReferencedContainer = "container:CallupTracker.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
