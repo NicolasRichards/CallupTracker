@@ -71,12 +71,28 @@ struct Provider: TimelineProvider {
         f.locale = Locale(identifier: "en_US_POSIX")
         let todayStr = f.string(from: .now)
 
+        // Prefer the pre-filtered list saved by the main app (exact eligibility match)
+        if let shared = loadShared(for: todayStr) {
+            let items = shared.players.map { CallupItem(id: $0.id, name: $0.name, team: $0.team) }
+            return CallupEntry(date: .now, callups: items, fetchFailed: false)
+        }
+
+        // Fall back to raw API fetch if app hasn't run today yet
         do {
             let items = try await fetchCallups(for: todayStr)
             return CallupEntry(date: .now, callups: items, fetchFailed: false)
         } catch {
             return CallupEntry(date: .now, callups: [], fetchFailed: true)
         }
+    }
+
+    private func loadShared(for dateStr: String) -> SharedWidgetData? {
+        guard let defaults = UserDefaults(suiteName: "group.NickRichards.MLBCallups"),
+              let data = defaults.data(forKey: "todayCallups"),
+              let shared = try? JSONDecoder().decode(SharedWidgetData.self, from: data),
+              shared.date == dateStr
+        else { return nil }
+        return shared
     }
 
     private func fetchCallups(for dateStr: String) async throws -> [CallupItem] {
@@ -115,6 +131,17 @@ struct Provider: TimelineProvider {
             }
             .sorted { $0.name < $1.name }
     }
+}
+
+// Shared container types (must match SharedCallupData.swift in the main app)
+private struct SharedWidgetData: Decodable {
+    let date: String
+    let players: [SharedWidgetPlayer]
+}
+private struct SharedWidgetPlayer: Decodable {
+    let id: Int
+    let name: String
+    let team: String
 }
 
 // Minimal decodable types (widget has no access to the main app module)

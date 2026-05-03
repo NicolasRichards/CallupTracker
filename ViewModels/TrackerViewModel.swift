@@ -70,6 +70,10 @@ class TrackerViewModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 self.cards = result
                 self.loadingState = result.isEmpty ? .empty : .loaded
+                // Share eligible players with the widget
+                if Calendar.current.isDateInToday(self.selectedDate) {
+                    SharedCallupData.save(result, for: dateStr)
+                }
             } catch is CancellationError {
                 // User navigated away — ignore
             } catch {
