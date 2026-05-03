@@ -160,11 +160,16 @@ struct CallupWidgetEntryView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                Text("\(entry.callups.count)")
-                    .font(.system(size: 40, weight: .bold))
-                Text("rookie\(entry.callups.count == 1 ? "" : "s") called up")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                ForEach(entry.callups.prefix(3)) { player in
+                    Text(player.name)
+                        .font(.caption.bold())
+                        .lineLimit(1)
+                }
+                if entry.callups.count > 3 {
+                    Text("+ more")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -196,7 +201,7 @@ struct CallupWidgetEntryView: View {
                     }
                 }
                 if entry.callups.count > 4 {
-                    Text("+\(entry.callups.count - 4) more")
+                    Text("+ more • tap to see all")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
