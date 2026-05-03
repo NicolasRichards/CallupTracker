@@ -13,6 +13,7 @@ import SwiftUI
 struct CallupEntry: TimelineEntry {
     let date: Date
     let callups: [CallupItem]
+    let fetchFailed: Bool
 }
 
 struct CallupItem: Identifiable {
@@ -29,20 +30,37 @@ struct Provider: TimelineProvider {
         CallupEntry(date: .now, callups: [
             CallupItem(id: 1, name: "Spencer Jones", team: "New York Yankees"),
             CallupItem(id: 2, name: "Jackson Chourio", team: "Milwaukee Brewers"),
-        ])
+        ], fetchFailed: false)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (CallupEntry) -> Void) {
-        completion(placeholder(in: context))
+        if context.isPreview {
+            completion(placeholder(in: context))
+            return
+        }
+        Task {
+            let entry = await fetchTodayEntry()
+            completion(entry)
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CallupEntry>) -> Void) {
         Task {
             let entry = await fetchTodayEntry()
-            var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
-            components.day! += 1
-            components.hour = 6
-            let nextUpdate = Calendar.current.date(from: components) ?? Date(timeIntervalSinceNow: 24 * 3600)
+
+            let nextUpdate: Date
+            if entry.fetchFailed || entry.callups.isEmpty {
+                // Retry in 30 minutes if we got nothing
+                nextUpdate = Date(timeIntervalSinceNow: 30 * 60)
+            } else {
+                // Refresh at 6 AM tomorrow once we have data
+                var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
+                components.day! += 1
+                components.hour = 6
+                components.minute = 0
+                nextUpdate = Calendar.current.date(from: components) ?? Date(timeIntervalSinceNow: 8 * 3600)
+            }
+
             completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
         }
     }
@@ -52,11 +70,12 @@ struct Provider: TimelineProvider {
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
         let todayStr = f.string(from: .now)
+
         do {
             let items = try await fetchCallups(for: todayStr)
-            return CallupEntry(date: .now, callups: items)
+            return CallupEntry(date: .now, callups: items, fetchFailed: false)
         } catch {
-            return CallupEntry(date: .now, callups: [])
+            return CallupEntry(date: .now, callups: [], fetchFailed: true)
         }
     }
 
@@ -66,11 +85,23 @@ struct Provider: TimelineProvider {
             133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146,
             147, 158
         ]
-        let url = URL(string: "https://statsapi.mlb.com/api/v1/transactions?startDate=\(dateStr)&endDate=\(dateStr)")!
-        let (data, _) = try await URLSession.shared.data(from: url)
-        let response = try JSONDecoder().decode(WidgetTransactionsResponse.self, from: data)
+
+        let urlStr = "https://statsapi.mlb.com/api/v1/transactions?startDate=\(dateStr)&endDate=\(dateStr)"
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        let session = URLSession(configuration: config)
+        let (data, response) = try await session.data(from: url)
+
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+
+        let decoded = try JSONDecoder().decode(WidgetTransactionsResponse.self, from: data)
+
         var seen = Set<Int>()
-        return response.transactions
+        return decoded.transactions
             .filter { txn in
                 guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
                 guard let toID = txn.toTeam?.id, mlbTeamIDs.contains(toID) else { return false }
@@ -125,7 +156,7 @@ struct CallupWidgetEntryView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             if entry.callups.isEmpty {
-                Text("None today")
+                Text(entry.fetchFailed ? "Tap to refresh" : "None today")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -147,7 +178,7 @@ struct CallupWidgetEntryView: View {
                 .foregroundStyle(.secondary)
             if entry.callups.isEmpty {
                 Spacer()
-                Text("No rookie callups today")
+                Text(entry.fetchFailed ? "Could not load — tap to retry" : "No rookie callups today")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -194,16 +225,18 @@ struct CallupWidget: Widget {
             }
         }
         .configurationDisplayName("Rookie Callups")
-        .description("See today's rookie-eligible MLB callups at a glance.")
+        .description("See today's rookie-eligible callups at a glance.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
-#Preview(as: .systemSmall) {
+#Preview(as: .systemMedium) {
     CallupWidget()
 } timeline: {
     CallupEntry(date: .now, callups: [
-        CallupItem(id: 1, name: "Spencer Jones", team: "NYY"),
-        CallupItem(id: 2, name: "Jackson Chourio", team: "MIL"),
-    ])
+        CallupItem(id: 1, name: "Spencer Jones", team: "New York Yankees"),
+        CallupItem(id: 2, name: "Jackson Chourio", team: "Milwaukee Brewers"),
+        CallupItem(id: 3, name: "Kyle Manzardo", team: "Cleveland Guardians"),
+    ], fetchFailed: false)
+    CallupEntry(date: .now, callups: [], fetchFailed: false)
 }
