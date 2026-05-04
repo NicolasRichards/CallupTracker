@@ -70,9 +70,12 @@ final class NotificationManager: Sendable {
                     return true
                 }
 
-                if !newCallups.isEmpty {
-                    await send(callups: newCallups)
-                    let allNotified = notifiedIDs.union(newCallups.compactMap { $0.person?.id })
+                // Filter to rookie-eligible only (mirrors buildCard logic in TrackerViewModel)
+                let rookieCallups = await rookieEligible(from: newCallups)
+
+                if !rookieCallups.isEmpty {
+                    await send(callups: rookieCallups)
+                    let allNotified = notifiedIDs.union(rookieCallups.compactMap { $0.person?.id })
                     UserDefaults.standard.set(Array(allNotified), forKey: Self.notifiedKey)
                 }
 
@@ -84,6 +87,44 @@ final class NotificationManager: Sendable {
 
         task.expirationHandler = { fetchTask.cancel() }
         await fetchTask.value
+    }
+
+    // Returns only rookie-eligible players: pitchers with < 50 career IP, hitters with < 130 career AB.
+    private func rookieEligible(from callups: [Transaction]) async -> [Transaction] {
+        await withTaskGroup(of: Transaction?.self) { group in
+            for txn in callups {
+                group.addTask {
+                    guard let playerID = txn.person?.id,
+                          let info = try? await MLBAPIClient.shared.fetchPlayerInfo(playerID: playerID)
+                    else { return nil }
+
+                    let posAbbr = info.primaryPosition?.abbreviation ?? ""
+                    let isPitcher = ["P", "SP", "RP", "TWP"].contains(posAbbr)
+
+                    if isPitcher {
+                        let raw = try? await MLBAPIClient.shared.fetchCareerPitching(playerID: playerID)
+                        let ip = raw.flatMap { $0.inningsPitched }.map { self.parseInnings($0) } ?? 0
+                        return ip < 50 ? txn : nil
+                    } else {
+                        let raw = try? await MLBAPIClient.shared.fetchCareerHitting(playerID: playerID)
+                        let ab = raw.flatMap { $0.atBats } ?? 0
+                        return ab < 130 ? txn : nil
+                    }
+                }
+            }
+            var result: [Transaction] = []
+            for await txn in group {
+                if let txn { result.append(txn) }
+            }
+            return result
+        }
+    }
+
+    private func parseInnings(_ ip: String) -> Double {
+        let parts = ip.split(separator: ".")
+        let full = Double(parts.first ?? "0") ?? 0
+        let thirds = Double(parts.dropFirst().first ?? "0") ?? 0
+        return full + thirds / 3.0
     }
 
     // MARK: - Notification Delivery
