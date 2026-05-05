@@ -180,7 +180,10 @@ class TrackerViewModel: ObservableObject {
         guard let txns = info.transactions else { return [] }
         return txns
             .filter { txn in
-                guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
+                // Only "CU" (Called Up) counts — excludes "SE" (40-man roster additions)
+                guard let code = txn.typeCode, code == "CU" else { return false }
+                // Must be to an MLB team
+                guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
                 guard let date = txn.date else { return false }
                 return date < beforeDate
             }
