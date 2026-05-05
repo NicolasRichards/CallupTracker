@@ -103,7 +103,11 @@ final class NotificationManager: Sendable {
 
                     if isPitcher {
                         let raw = try? await MLBAPIClient.shared.fetchCareerPitching(playerID: playerID)
-                        let ip = raw.flatMap { $0.inningsPitched }.map { notificationParseInnings($0) } ?? 0
+                        let ipStr = raw?.inningsPitched ?? "0"
+                        let ipParts = ipStr.split(separator: ".")
+                        let ipFull = Double(ipParts.first ?? "0") ?? 0
+                        let ipThirds = Double(ipParts.dropFirst().first ?? "0") ?? 0
+                        let ip = ipFull + ipThirds / 3.0
                         return ip < 50 ? txn : nil
                     } else {
                         let raw = try? await MLBAPIClient.shared.fetchCareerHitting(playerID: playerID)
@@ -151,11 +155,4 @@ final class NotificationManager: Sendable {
     }
 }
 
-// Free function — not actor-isolated, safe to call from concurrent contexts
-private func notificationParseInnings(_ ip: String) -> Double {
-    let parts = ip.split(separator: ".")
-    let full = Double(parts.first ?? "0") ?? 0
-    let thirds = Double(parts.dropFirst().first ?? "0") ?? 0
-    return full + thirds / 3.0
-}
 #endif
