@@ -14,12 +14,12 @@ struct ContentView: View {
 
     private var gridColumns: [GridItem] {
         #if os(macOS)
-        return [GridItem(.adaptive(minimum: 280, maximum: 360), spacing: 12)]
+        return [GridItem(.adaptive(minimum: 280, maximum: 360), spacing: 12, alignment: .top)]
         #else
         if horizontalSizeClass == .compact {
             return [GridItem(.flexible())]
         } else {
-            return [GridItem(.adaptive(minimum: 300, maximum: 500), spacing: 12)]
+            return [GridItem(.adaptive(minimum: 300, maximum: 500), spacing: 12, alignment: .top)]
         }
         #endif
     }
