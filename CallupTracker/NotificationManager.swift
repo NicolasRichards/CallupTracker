@@ -120,7 +120,7 @@ final class NotificationManager: Sendable {
         }
     }
 
-    private func parseInnings(_ ip: String) -> Double {
+    nonisolated private func parseInnings(_ ip: String) -> Double {
         let parts = ip.split(separator: ".")
         let full = Double(parts.first ?? "0") ?? 0
         let thirds = Double(parts.dropFirst().first ?? "0") ?? 0
