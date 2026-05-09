@@ -133,7 +133,7 @@ final class NotificationManager: Sendable {
             content.body = "\(name) called up to \(team)"
         } else {
             content.title = "Rookie Callups Today"
-            content.body = "\(callups.count) rookie-eligible players called up today"
+            content.body = "\(callups.count) new rookie-eligible callups today"
         }
         content.sound = .default
 
