@@ -157,6 +157,8 @@ class TrackerViewModel: ObservableObject {
         }
 
         let callupHistory = extractCallupHistory(from: info, beforeDate: dateStr)
+        let currentYear = String(Calendar.current.component(.year, from: Date()))
+        let isFirstCallupThisSeason = !callupHistory.contains { $0.contains(currentYear) }
 
         return PlayerCard(
             id: playerID,
@@ -170,7 +172,8 @@ class TrackerViewModel: ObservableObject {
             isPitcher: isPitcher,
             hittingStats: displayHitting,
             pitchingStats: displayPitching,
-            callupHistory: callupHistory
+            callupHistory: callupHistory,
+            isFirstCallupThisSeason: isFirstCallupThisSeason
         )
     }
 

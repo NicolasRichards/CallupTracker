@@ -48,15 +48,27 @@ struct PlayerCardView: View {
             .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 8) {
-                // Position badge
-                Text(card.positionName)
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(positionColor(for: card.positionAbbr).opacity(0.18))
-                    .foregroundStyle(positionColor(for: card.positionAbbr))
-                    .clipShape(Capsule())
+                // Position badge + first call-up indicator
+                HStack(spacing: 6) {
+                    Text(card.positionName)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(positionColor(for: card.positionAbbr).opacity(0.18))
+                        .foregroundStyle(positionColor(for: card.positionAbbr))
+                        .clipShape(Capsule())
+                    if card.isFirstCallupThisSeason {
+                        Text("1st Call-up")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.green.opacity(0.18))
+                            .foregroundStyle(Color.green)
+                            .clipShape(Capsule())
+                    }
+                }
 
                 // Transaction description
                 Text(card.description)
@@ -90,7 +102,7 @@ struct PlayerCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                .stroke(card.isFirstCallupThisSeason ? Color.green.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: card.isFirstCallupThisSeason ? 1.5 : 1)
         )
     }
 

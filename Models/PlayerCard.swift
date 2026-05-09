@@ -20,6 +20,7 @@ struct PlayerCard: Identifiable {
     let hittingStats: DisplayHittingStats?
     let pitchingStats: DisplayPitchingStats?
     let callupHistory: [String]  // Formatted prior callup date strings, newest first
+    let isFirstCallupThisSeason: Bool
 }
 
 struct DisplayHittingStats {
