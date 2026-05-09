@@ -105,7 +105,12 @@ class TrackerViewModel: ObservableObject {
             for try await card in group {
                 if let card { result.append(card) }
             }
-            return result.sorted { $0.name < $1.name }
+            return result.sorted {
+                if $0.isFirstCallupThisSeason != $1.isFirstCallupThisSeason {
+                    return $0.isFirstCallupThisSeason
+                }
+                return $0.name < $1.name
+            }
         }
     }
 
