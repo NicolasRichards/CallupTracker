@@ -23,6 +23,7 @@ struct PlayerTransaction: Codable, Sendable {
     let typeCode: String?
     let date: String?
     let toTeam: TeamRef?
+    let fromTeam: TeamRef?
 }
 
 struct Position: Codable, Sendable {
