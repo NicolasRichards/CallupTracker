@@ -59,7 +59,7 @@ struct PlayerCardView: View {
                         .foregroundStyle(positionColor(for: card.positionAbbr))
                         .clipShape(Capsule())
                     if card.isFirstCallupThisSeason {
-                        Text("1st Call-up")
+                        Text("1st \(Calendar.current.component(.year, from: Date())) Callup")
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 8)
