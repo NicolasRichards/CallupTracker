@@ -16,5 +16,7 @@
 	<array>
 		<string>fetch</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
