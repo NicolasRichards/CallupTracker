@@ -15,6 +15,7 @@ final class NotificationManager: Sendable {
 
     static let taskIdentifier = "NickRichards.MLBCallups.refresh"
     private static let notifiedKey = "notifiedCallupIDs"
+    private static let notifiedDateKey = "notifiedCallupDate"
 
     // MARK: - Permission
 
@@ -59,7 +60,15 @@ final class NotificationManager: Sendable {
                 let callups = transactions.filter { txn in
                     guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
                     guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-                    return txn.fromTeam != nil
+                    // Accept if API provides fromTeam, or if description says "from [minor league team]"
+                    return txn.fromTeam != nil || txn.description?.lowercased().contains(" from ") == true
+                }
+
+                // Reset daily tracking when the date changes so totals stay accurate per day
+                let storedDate = UserDefaults.standard.string(forKey: Self.notifiedDateKey) ?? ""
+                if storedDate != today {
+                    UserDefaults.standard.removeObject(forKey: Self.notifiedKey)
+                    UserDefaults.standard.set(today, forKey: Self.notifiedDateKey)
                 }
 
                 let notifiedIDs = Set((UserDefaults.standard.array(forKey: Self.notifiedKey) as? [Int]) ?? [])
@@ -74,7 +83,9 @@ final class NotificationManager: Sendable {
                 let rookieCallups = await rookieEligible(from: newCallups)
 
                 if !rookieCallups.isEmpty {
-                    await send(callups: rookieCallups)
+                    // Report the running daily total so the alert count matches what the app shows
+                    let totalToday = notifiedIDs.count + rookieCallups.count
+                    await send(callups: rookieCallups, totalToday: totalToday)
                     let allNotified = notifiedIDs.union(rookieCallups.compactMap { $0.person?.id })
                     UserDefaults.standard.set(Array(allNotified), forKey: Self.notifiedKey)
                 }
@@ -126,14 +137,14 @@ final class NotificationManager: Sendable {
 
     // MARK: - Notification Delivery
 
-    private func send(callups: [Transaction]) async {
+    private func send(callups: [Transaction], totalToday: Int) async {
         let content = UNMutableNotificationContent()
-        if callups.count == 1, let name = callups[0].person?.fullName, let team = callups[0].toTeam?.name {
+        if totalToday == 1, let name = callups[0].person?.fullName, let team = callups[0].toTeam?.name {
             content.title = "Rookie Called Up"
             content.body = "\(name) called up to \(team)"
         } else {
             content.title = "Rookie Callups Today"
-            content.body = "\(callups.count) new rookie-eligible callups today"
+            content.body = "\(totalToday) rookie-eligible callups today"
         }
         content.sound = .default
 

@@ -117,7 +117,8 @@ class TrackerViewModel: ObservableObject {
     private func isCallup(_ txn: Transaction) -> Bool {
         guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
         guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-        return txn.fromTeam != nil
+        // Accept if API provides fromTeam, or if description says "from [minor league team]"
+        return txn.fromTeam != nil || txn.description?.lowercased().contains(" from ") == true
     }
 
     private func buildCard(from txn: Transaction, dateStr: String) async throws -> PlayerCard? {
@@ -193,12 +194,28 @@ class TrackerViewModel: ObservableObject {
                 guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
                 guard txn.fromTeam != nil else { return false }
                 guard let date = txn.date else { return false }
+                guard isRegularSeason(date) else { return false }
                 return date < beforeDate
             }
             .compactMap { $0.date.map { formatCallupDate($0) } }
             .reversed()
             .prefix(3)
             .map { $0 }
+    }
+
+    // Regular season: last week of March through first week of October
+    private func isRegularSeason(_ dateStr: String) -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        guard let date = formatter.date(from: dateStr) else { return false }
+        let cal = Calendar.current
+        let month = cal.component(.month, from: date)
+        let day = cal.component(.day, from: date)
+        if month >= 4 && month <= 9 { return true }
+        if month == 3 && day >= 20 { return true }
+        if month == 10 && day <= 10 { return true }
+        return false
     }
 
     private func formatCallupDate(_ dateStr: String) -> String {
