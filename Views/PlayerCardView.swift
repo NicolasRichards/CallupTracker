@@ -113,7 +113,7 @@ struct PlayerCardView: View {
         switch abbr {
         case "P", "SP", "RP", "TWP": return .orange
         case "C": return .purple
-        case "1B", "2B", "3B", "SS": return .green
+        case "1B", "2B", "3B", "SS": return .red
         default: return .blue
         }
     }
