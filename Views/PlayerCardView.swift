@@ -40,6 +40,7 @@ struct PlayerCardView: View {
                                 .font(.headline)
                                 .lineLimit(1)
                         }
+                        .tint(.blue)
                     } else {
                         Text(card.name)
                             .font(.headline)
