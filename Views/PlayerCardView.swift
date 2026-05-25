@@ -39,7 +39,6 @@ struct PlayerCardView: View {
                             Text(card.name)
                                 .font(.headline)
                                 .lineLimit(1)
-                                .foregroundStyle(.primary)
                         }
                     } else {
                         Text(card.name)
