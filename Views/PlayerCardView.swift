@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PlayerCardView: View {
     let card: PlayerCard
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -34,18 +35,15 @@ struct PlayerCardView: View {
                 .overlay(Circle().stroke(Color.secondary.opacity(0.3), lineWidth: 1))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    if let url = URL(string: "https://www.baseball-reference.com/redirect.fcgi?player=1&mlb_ID=\(card.id)") {
-                        Link(destination: url) {
-                            Text(card.name)
-                                .font(.headline)
-                                .lineLimit(1)
+                    Text(card.name)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .foregroundStyle(.blue)
+                        .onTapGesture {
+                            if let url = URL(string: "https://www.baseball-reference.com/redirect.fcgi?player=1&mlb_ID=\(card.id)") {
+                                openURL(url)
+                            }
                         }
-                        .tint(.blue)
-                    } else {
-                        Text(card.name)
-                            .font(.headline)
-                            .lineLimit(1)
-                    }
                     Text(card.team)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
