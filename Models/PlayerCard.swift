@@ -21,6 +21,38 @@ struct PlayerCard: Identifiable {
     let pitchingStats: DisplayPitchingStats?
     let callupHistory: [String]  // Formatted prior callup date strings, newest first
     let isFirstCallupThisSeason: Bool
+    let brefRookieStatus: BaseballReferenceClient.RookieStatus
+
+    var isRookieEligible: Bool { brefRookieStatus == .rookieEligible }
+    var isBRefRateLimited: Bool { brefRookieStatus == .rateLimited }
+
+    // MARK: - Buckets
+
+    enum CallupBucket: Int {
+        case mlbDebut           = 0
+        case firstCallupThisYear = 1
+        case alreadyCalledUpThisYear = 2
+        case notEligible        = 3
+        case brefRateLimited    = 4
+    }
+
+    var callupBucket: CallupBucket {
+        if isBRefRateLimited        { return .brefRateLimited }
+        if !isRookieEligible        { return .notEligible }
+        if callupHistory.isEmpty    { return .mlbDebut }
+        if isFirstCallupThisSeason  { return .firstCallupThisYear }
+        return .alreadyCalledUpThisYear
+    }
+
+    var bucketTitle: String {
+        switch callupBucket {
+        case .mlbDebut:               return "MLB Debut"
+        case .firstCallupThisYear:    return "1st \(Calendar.current.component(.year, from: Date())) Call-Up"
+        case .alreadyCalledUpThisYear: return "Called Up Before This Year"
+        case .notEligible:            return "Not Eligible"
+        case .brefRateLimited:        return "B-Ref Rate Limited"
+        }
+    }
 }
 
 struct DisplayHittingStats {

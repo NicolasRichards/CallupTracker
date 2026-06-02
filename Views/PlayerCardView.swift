@@ -55,7 +55,7 @@ struct PlayerCardView: View {
             .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 8) {
-                // Position badge + first call-up indicator
+                // Position badge + bucket badge
                 HStack(spacing: 6) {
                     Text(card.positionName)
                         .font(.caption2)
@@ -65,19 +65,14 @@ struct PlayerCardView: View {
                         .background(positionColor(for: card.positionAbbr).opacity(0.18))
                         .foregroundStyle(positionColor(for: card.positionAbbr))
                         .clipShape(Capsule())
-                    if card.isFirstCallupThisSeason {
-                        let label = card.callupHistory.isEmpty
-                            ? "1st Callup Ever"
-                            : "1st \(Calendar.current.component(.year, from: Date())) Callup"
-                        Text(label)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.green.opacity(0.18))
-                            .foregroundStyle(Color.green)
-                            .clipShape(Capsule())
-                    }
+                    Text(card.bucketTitle)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(bucketColor.opacity(0.18))
+                        .foregroundStyle(bucketColor)
+                        .clipShape(Capsule())
                 }
 
                 // Transaction description
@@ -112,8 +107,18 @@ struct PlayerCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(card.isFirstCallupThisSeason ? Color.green.opacity(0.5) : Color.secondary.opacity(0.2), lineWidth: card.isFirstCallupThisSeason ? 1.5 : 1)
+                .stroke(bucketColor.opacity(0.5), lineWidth: 1.5)
         )
+    }
+
+    private var bucketColor: Color {
+        switch card.callupBucket {
+        case .mlbDebut:               return .green
+        case .firstCallupThisYear:    return .blue
+        case .alreadyCalledUpThisYear: return .orange
+        case .notEligible:            return .red
+        case .brefRateLimited:        return .yellow
+        }
     }
 
     private func positionColor(for abbr: String) -> Color {

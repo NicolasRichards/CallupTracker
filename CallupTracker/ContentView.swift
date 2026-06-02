@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @StateObject private var viewModel = TrackerViewModel()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @State private var now: Date = Date()
 
     private var gridColumns: [GridItem] {
         #if os(macOS)
@@ -27,6 +29,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             dateNavBar
+            rateLimitBanner
             Divider()
             contentArea
         }
@@ -38,6 +41,34 @@ struct ContentView: View {
             if phase == .active { viewModel.loadCards() }
         }
     }
+
+    // MARK: - Rate Limit Banner
+
+    @ViewBuilder
+    private var rateLimitBanner: some View {
+        if let until = viewModel.brefRateLimitUntil, until > now {
+            let secondsRemaining = max(0, Int(until.timeIntervalSince(now)))
+            let minutes = secondsRemaining / 60
+            let seconds = secondsRemaining % 60
+
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                Text("Baseball Reference is rate limiting this app. Rookie eligibility may be incomplete. Try again in \(minutes)m \(String(format: "%02d", seconds))s.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.yellow.opacity(0.18))
+            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in
+                now = date
+            }
+        }
+    }
+
+    // MARK: - Content
 
     @ViewBuilder
     private var contentArea: some View {
@@ -51,8 +82,8 @@ struct ContentView: View {
             ScrollView {
                 EmptyStateView(
                     icon: "figure.baseball",
-                    title: "No rookie call-ups",
-                    message: "No rookie-eligible players were called up on \(viewModel.displayDate). Try another date or check back during the MLB season (April–October)."
+                    title: "No call-ups",
+                    message: "No players were called up on \(viewModel.displayDate). Try another date or check back during the MLB season (April–October)."
                 )
             }
 
@@ -71,45 +102,99 @@ struct ContentView: View {
                     EmptyStateView(
                         icon: "person.crop.circle.badge.questionmark",
                         title: "No call-ups for \(viewModel.selectedTeam?.abbreviation ?? "this team")",
-                        message: "No rookie-eligible players from \(viewModel.selectedTeam?.name ?? "this team") were called up on \(viewModel.displayDate)."
+                        message: "No players from \(viewModel.selectedTeam?.name ?? "this team") were called up on \(viewModel.displayDate)."
                     )
                 }
             } else {
-                #if os(iOS)
-                if horizontalSizeClass == .compact {
-                    List(displayed) { card in
-                        PlayerCardView(card: card)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                    }
-                    .listStyle(.plain)
-                } else {
-                    ScrollView {
-                        LazyVGrid(columns: gridColumns, spacing: 12) {
-                            ForEach(displayed) { card in
-                                PlayerCardView(card: card)
-                            }
-                        }
-                        .padding(16)
-                    }
-                }
-                #else
-                ScrollView {
-                    LazyVGrid(columns: gridColumns, spacing: 12) {
-                        ForEach(displayed) { card in
-                            PlayerCardView(card: card)
-                        }
-                    }
-                    .padding(16)
-                }
-                #endif
+                tieredCallupList(displayed)
             }
 
         case .idle:
             Spacer()
         }
     }
+
+    // MARK: - Tiered Layout
+
+    @ViewBuilder
+    private func tieredCallupList(_ cards: [PlayerCard]) -> some View {
+        let debut          = cards.filter { $0.callupBucket == .mlbDebut }.sorted { $0.name < $1.name }
+        let firstThisYear  = cards.filter { $0.callupBucket == .firstCallupThisYear }.sorted { $0.name < $1.name }
+        let alreadyThisYear = cards.filter { $0.callupBucket == .alreadyCalledUpThisYear }.sorted { $0.name < $1.name }
+        let notEligible    = cards.filter { $0.callupBucket == .notEligible }.sorted { $0.name < $1.name }
+        let rateLimited    = cards.filter { $0.callupBucket == .brefRateLimited }.sorted { $0.name < $1.name }
+
+        #if os(iOS)
+        if horizontalSizeClass == .compact {
+            List {
+                callupListSection(title: "MLB Debut", cards: debut)
+                callupListSection(title: "Eligible — First Call-Up This Year", cards: firstThisYear)
+                callupListSection(title: "Eligible — Called Up Before This Year", cards: alreadyThisYear)
+                callupListSection(title: "Not Eligible", cards: notEligible)
+                callupListSection(title: "B-Ref Rate Limited", cards: rateLimited)
+            }
+            .listStyle(.plain)
+        } else {
+            tieredGrid(debut: debut, firstThisYear: firstThisYear,
+                       alreadyThisYear: alreadyThisYear, notEligible: notEligible, rateLimited: rateLimited)
+        }
+        #else
+        tieredGrid(debut: debut, firstThisYear: firstThisYear,
+                   alreadyThisYear: alreadyThisYear, notEligible: notEligible, rateLimited: rateLimited)
+        #endif
+    }
+
+    @ViewBuilder
+    private func tieredGrid(debut: [PlayerCard], firstThisYear: [PlayerCard],
+                            alreadyThisYear: [PlayerCard], notEligible: [PlayerCard],
+                            rateLimited: [PlayerCard]) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                callupGridSection(title: "MLB Debut", cards: debut)
+                callupGridSection(title: "Eligible — First Call-Up This Year", cards: firstThisYear)
+                callupGridSection(title: "Eligible — Called Up Before This Year", cards: alreadyThisYear)
+                callupGridSection(title: "Not Eligible", cards: notEligible)
+                callupGridSection(title: "B-Ref Rate Limited", cards: rateLimited)
+            }
+            .padding(16)
+        }
+    }
+
+    @ViewBuilder
+    private func callupGridSection(title: String, cards: [PlayerCard]) -> some View {
+        if !cards.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(title)
+                        .font(.title2.bold())
+                    Text("\(cards.count)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                LazyVGrid(columns: gridColumns, spacing: 12) {
+                    ForEach(cards) { card in
+                        PlayerCardView(card: card)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func callupListSection(title: String, cards: [PlayerCard]) -> some View {
+        if !cards.isEmpty {
+            Section(title) {
+                ForEach(cards) { card in
+                    PlayerCardView(card: card)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+            }
+        }
+    }
+
+    // MARK: - Nav Bar
 
     private var dateNavBar: some View {
         HStack(spacing: 10) {

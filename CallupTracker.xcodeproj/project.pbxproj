@@ -15,6 +15,7 @@
 		01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CB2F4914C000C6E960 /* CareerStats.swift */; };
 		01A0B4CE2F4914DB00C6E960 /* PlayerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */; };
 		01A0B4D02F49151400C6E960 /* MLBAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */; };
+		01A0B4DA2F49155000C6E960 /* BaseballReferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */; };
 		01A0B4D22F49152100C6E960 /* TrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */; };
 		01A0B4D42F49152D00C6E960 /* PlayerCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */; };
 		01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D52F49153B00C6E960 /* StatsGridView.swift */; };
@@ -56,6 +57,7 @@
 		01A0B4CB2F4914C000C6E960 /* CareerStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerStats.swift; sourceTree = "<group>"; };
 		01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCard.swift; sourceTree = "<group>"; };
 		01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLBAPIClient.swift; sourceTree = "<group>"; };
+		01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballReferenceClient.swift; sourceTree = "<group>"; };
 		01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerViewModel.swift; sourceTree = "<group>"; };
 		01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCardView.swift; sourceTree = "<group>"; };
 		01A0B4D52F49153B00C6E960 /* StatsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsGridView.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 			isa = PBXGroup;
 			children = (
 				01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */,
+				01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -308,6 +311,7 @@
 				01A0B4CA2F4914AF00C6E960 /* PlayerInfo.swift in Sources */,
 				01A0B4D22F49152100C6E960 /* TrackerViewModel.swift in Sources */,
 				01A0B4D02F49151400C6E960 /* MLBAPIClient.swift in Sources */,
+				01A0B4DA2F49155000C6E960 /* BaseballReferenceClient.swift in Sources */,
 				01A0B4CE2F4914DB00C6E960 /* PlayerCard.swift in Sources */,
 				01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */,
 				01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */,

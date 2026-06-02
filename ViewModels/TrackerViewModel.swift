@@ -8,6 +8,7 @@ class TrackerViewModel: ObservableObject {
     @Published var cards: [PlayerCard] = []
     @Published var loadingState: LoadingState = .idle
     @Published var selectedTeamID: Int? = nil
+    @Published var brefRateLimitUntil: Date? = nil
 
     enum LoadingState {
         case idle, loading, loaded, empty
@@ -72,7 +73,8 @@ class TrackerViewModel: ObservableObject {
                 self.loadingState = result.isEmpty ? .empty : .loaded
                 // Share eligible players with the widget
                 if Calendar.current.isDateInToday(self.selectedDate) {
-                    SharedCallupData.save(result, for: dateStr)
+                    // Widget only shows rookie-eligible players
+                    SharedCallupData.save(result.filter { $0.isRookieEligible }, for: dateStr)
                 }
             } catch is CancellationError {
                 // User navigated away — ignore
@@ -106,8 +108,8 @@ class TrackerViewModel: ObservableObject {
                 if let card { result.append(card) }
             }
             return result.sorted {
-                if $0.isFirstCallupThisSeason != $1.isFirstCallupThisSeason {
-                    return $0.isFirstCallupThisSeason
+                if $0.callupBucket.rawValue != $1.callupBucket.rawValue {
+                    return $0.callupBucket.rawValue < $1.callupBucket.rawValue
                 }
                 return $0.name < $1.name
             }
@@ -136,7 +138,6 @@ class TrackerViewModel: ObservableObject {
         if isPitcher {
             let raw = try await api.fetchCareerPitching(playerID: playerID)
             if let raw {
-                if parseInnings(raw.inningsPitched) >= 50 { return nil }
                 displayPitching = DisplayPitchingStats(
                     games: raw.gamesPlayed ?? 0,
                     wins: raw.wins ?? 0,
@@ -150,7 +151,6 @@ class TrackerViewModel: ObservableObject {
         } else {
             let raw = try await api.fetchCareerHitting(playerID: playerID)
             if let raw {
-                if (raw.atBats ?? 0) >= 130 { return nil }
                 displayHitting = DisplayHittingStats(
                     games: raw.gamesPlayed ?? 0,
                     atBats: raw.atBats ?? 0,
@@ -166,6 +166,12 @@ class TrackerViewModel: ObservableObject {
         let currentYear = String(Calendar.current.component(.year, from: Date()))
         let isFirstCallupThisSeason = !callupHistory.contains { $0.contains(currentYear) }
 
+        // Use Baseball Reference as the arbiter of rookie eligibility
+        let brefLookup = await BaseballReferenceClient.shared.fetchRookieStatus(forMLBID: playerID)
+        if let retryAfterSeconds = brefLookup.retryAfterSeconds {
+            self.brefRateLimitUntil = Date().addingTimeInterval(TimeInterval(retryAfterSeconds))
+        }
+
         return PlayerCard(
             id: playerID,
             teamID: txn.toTeam?.id ?? 0,
@@ -179,7 +185,8 @@ class TrackerViewModel: ObservableObject {
             hittingStats: displayHitting,
             pitchingStats: displayPitching,
             callupHistory: callupHistory,
-            isFirstCallupThisSeason: isFirstCallupThisSeason
+            isFirstCallupThisSeason: isFirstCallupThisSeason,
+            brefRookieStatus: brefLookup.status
         )
     }
 
