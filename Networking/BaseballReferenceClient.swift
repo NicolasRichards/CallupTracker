@@ -55,6 +55,10 @@ struct BaseballReferenceClient {
         }
     }
 
+    func hasCachedStatus(forMLBID mlbID: Int) -> Bool {
+        cachedStatus(for: mlbID) != nil
+    }
+
     // MARK: - Fetch
 
     func fetchRookieStatus(forMLBID mlbID: Int) async -> BaseballReferenceLookup {

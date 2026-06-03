@@ -64,10 +64,11 @@ class TrackerViewModel: ObservableObject {
         cards = []
         loadingState = .loading
         let dateStr = formattedDate
+        let loadingToday = isAtToday
 
         loadingTask = Task {
             do {
-                let result = try await fetchCallups(for: dateStr)
+                let result = try await fetchCallups(for: dateStr, isToday: loadingToday)
                 guard !Task.isCancelled else { return }
                 self.cards = result
                 self.loadingState = result.isEmpty ? .empty : .loaded
@@ -87,7 +88,7 @@ class TrackerViewModel: ObservableObject {
 
     // MARK: - Pipeline
 
-    private func fetchCallups(for dateStr: String) async throws -> [PlayerCard] {
+    private func fetchCallups(for dateStr: String, isToday: Bool = true) async throws -> [PlayerCard] {
         let transactions = try await api.fetchTransactions(for: dateStr)
 
         let callups = transactions.filter { isCallup($0) }
@@ -100,8 +101,9 @@ class TrackerViewModel: ObservableObject {
         }
 
         return try await withThrowingTaskGroup(of: PlayerCard?.self) { group in
-            for txn in unique {
-                group.addTask { try await self.buildCard(from: txn, dateStr: dateStr) }
+            for (index, txn) in unique.enumerated() {
+                let brefDelay = isToday ? 0 : index
+                group.addTask { try await self.buildCard(from: txn, dateStr: dateStr, brefDelayIndex: brefDelay) }
             }
             var result: [PlayerCard] = []
             for try await card in group {
@@ -123,7 +125,7 @@ class TrackerViewModel: ObservableObject {
         return txn.fromTeam != nil || txn.description?.lowercased().contains(" from ") == true
     }
 
-    private func buildCard(from txn: Transaction, dateStr: String) async throws -> PlayerCard? {
+    private func buildCard(from txn: Transaction, dateStr: String, brefDelayIndex: Int = 0) async throws -> PlayerCard? {
         guard let person = txn.person else { return nil }
         let playerID = person.id
 
@@ -165,6 +167,12 @@ class TrackerViewModel: ObservableObject {
         let callupHistory = extractCallupHistory(from: info, beforeDate: dateStr)
         let currentYear = String(Calendar.current.component(.year, from: Date()))
         let isFirstCallupThisSeason = !callupHistory.contains { $0.contains(currentYear) }
+
+        // For historical dates, stagger uncached BBRef requests (300ms per player)
+        // to avoid triggering rate limiting. Skip the delay for today and for cache hits.
+        if brefDelayIndex > 0, !BaseballReferenceClient.shared.hasCachedStatus(forMLBID: playerID) {
+            try await Task.sleep(nanoseconds: UInt64(brefDelayIndex) * 300_000_000)
+        }
 
         // Use Baseball Reference as the arbiter of rookie eligibility
         let brefLookup = await BaseballReferenceClient.shared.fetchRookieStatus(forMLBID: playerID)
