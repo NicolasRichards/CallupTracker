@@ -55,7 +55,7 @@ struct PlayerCardView: View {
             .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 8) {
-                // Position badge + bucket badge
+                // Position badge only — bucket is communicated by section header and card border
                 HStack(spacing: 6) {
                     Text(card.positionName)
                         .font(.caption2)
@@ -64,14 +64,6 @@ struct PlayerCardView: View {
                         .padding(.vertical, 3)
                         .background(positionColor(for: card.positionAbbr).opacity(0.18))
                         .foregroundStyle(positionColor(for: card.positionAbbr))
-                        .clipShape(Capsule())
-                    Text(card.bucketTitle)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(bucketColor.opacity(0.18))
-                        .foregroundStyle(bucketColor)
                         .clipShape(Capsule())
                 }
 
