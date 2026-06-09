@@ -121,8 +121,17 @@ class TrackerViewModel: ObservableObject {
     private func isCallup(_ txn: Transaction) -> Bool {
         guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
         guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-        // Accept if API provides fromTeam, or if description says "from [minor league team]"
-        return txn.fromTeam != nil || txn.description?.lowercased().contains(" from ") == true
+
+        if let fromID = txn.fromTeam?.id {
+            // fromTeam is provided — it must be a minor-league team (not an MLB club).
+            // If it's an MLB team, this is a trade/DFA claim, not a callup.
+            return !MLBAPIClient.mlbTeamIDs.contains(fromID)
+        }
+
+        // No fromTeam in API data — fall back to description heuristic.
+        // This catches cases where the API omits fromTeam but the description
+        // mentions the minor-league affiliate (e.g. "recalled from Iowa Cubs").
+        return txn.description?.lowercased().contains(" from ") == true
     }
 
     private func buildCard(from txn: Transaction, dateStr: String, brefDelayIndex: Int = 0) async throws -> PlayerCard? {
