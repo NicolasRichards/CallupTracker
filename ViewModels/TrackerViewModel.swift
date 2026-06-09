@@ -129,9 +129,13 @@ class TrackerViewModel: ObservableObject {
         }
 
         // No fromTeam in API data — fall back to description heuristic.
-        // This catches cases where the API omits fromTeam but the description
-        // mentions the minor-league affiliate (e.g. "recalled from Iowa Cubs").
-        return txn.description?.lowercased().contains(" from ") == true
+        // Accept only if the description mentions " from " but does NOT name
+        // an MLB club (e.g. "recalled from Iowa Cubs" passes, but
+        // "traded from Los Angeles Dodgers" does not).
+        guard let desc = txn.description, desc.lowercased().contains(" from ") else { return false }
+        let lower = desc.lowercased()
+        let mentionsMLBTeam = MLBAPIClient.allTeams.contains { lower.contains($0.name.lowercased()) }
+        return !mentionsMLBTeam
     }
 
     private func buildCard(from txn: Transaction, dateStr: String, brefDelayIndex: Int = 0) async throws -> PlayerCard? {
