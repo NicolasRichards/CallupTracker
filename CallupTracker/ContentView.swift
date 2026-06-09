@@ -47,23 +47,29 @@ struct ContentView: View {
     @ViewBuilder
     private var rateLimitBanner: some View {
         if let until = viewModel.brefRateLimitUntil, until > now {
-            let secondsRemaining = max(0, Int(until.timeIntervalSince(now)))
-            let minutes = secondsRemaining / 60
-            let seconds = secondsRemaining % 60
+            // TimelineView drives the countdown — no Timer publisher gets
+            // re-created on every body evaluation.
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let secondsRemaining = max(0, Int(until.timeIntervalSince(context.date)))
+                let minutes = secondsRemaining / 60
+                let seconds = secondsRemaining % 60
 
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.yellow)
-                Text("Baseball Reference is rate limiting this app. Rookie eligibility may be incomplete. Try again in \(minutes)m \(String(format: "%02d", seconds))s.")
-                    .font(.caption)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.yellow.opacity(0.18))
-            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in
-                now = date
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.yellow)
+                    Text("Baseball Reference is rate limiting this app. Rookie eligibility may be incomplete. Try again in \(minutes)m \(String(format: "%02d", seconds))s.")
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.yellow.opacity(0.18))
+                .onChange(of: secondsRemaining) { remaining in
+                    // Keep `now` fresh so the banner's visibility condition
+                    // re-evaluates and it disappears when the window expires.
+                    if remaining <= 0 { now = Date() }
+                }
             }
         }
     }

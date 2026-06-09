@@ -12,7 +12,5 @@ import SwiftUI
 struct CallupWidgetBundle: WidgetBundle {
     var body: some Widget {
         CallupWidget()
-        CallupWidgetControl()
-        CallupWidgetLiveActivity()
     }
 }

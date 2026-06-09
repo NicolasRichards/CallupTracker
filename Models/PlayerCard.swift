@@ -43,16 +43,6 @@ struct PlayerCard: Identifiable {
         if isFirstCallupThisSeason  { return .firstCallupThisYear }
         return .alreadyCalledUpThisYear
     }
-
-    var bucketTitle: String {
-        switch callupBucket {
-        case .mlbDebut:               return "MLB Debut"
-        case .firstCallupThisYear:    return "1st \(Calendar.current.component(.year, from: Date())) Call-Up"
-        case .alreadyCalledUpThisYear: return "Called Up Before This Year"
-        case .notEligible:            return "Not Eligible"
-        case .brefRateLimited:        return "B-Ref Rate Limited"
-        }
-    }
 }
 
 struct DisplayHittingStats {

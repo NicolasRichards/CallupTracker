@@ -57,12 +57,8 @@ final class NotificationManager: Sendable {
             do {
                 let today = todayDateString()
                 let transactions = try await MLBAPIClient.shared.fetchTransactions(for: today)
-                let callups = transactions.filter { txn in
-                    guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
-                    guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-                    // Accept if API provides fromTeam, or if description says "from [minor league team]"
-                    return txn.fromTeam != nil || txn.description?.lowercased().contains(" from ") == true
-                }
+                // Same filter the app uses — excludes MLB→MLB trades and waiver claims
+                let callups = transactions.filter { $0.isLikelyCallup }
 
                 // Reset daily tracking when the date changes so totals stay accurate per day
                 let storedDate = UserDefaults.standard.string(forKey: Self.notifiedDateKey) ?? ""
@@ -79,8 +75,25 @@ final class NotificationManager: Sendable {
                     return true
                 }
 
+                // SE can mean a 40-man-only addition; verify against the live active
+                // roster (mirrors fetchCallups in TrackerViewModel) so we never
+                // notify about a player the app then doesn't show.
+                let seTeamIDs = Set(newCallups.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
+                var activeRosters: [Int: Set<Int>] = [:]
+                for teamID in seTeamIDs {
+                    activeRosters[teamID] = (try? await MLBAPIClient.shared.fetchActiveRosterIDs(teamID: teamID)) ?? []
+                }
+                let confirmed = newCallups.filter { txn in
+                    guard txn.typeCode == "SE",
+                          let teamID = txn.toTeam?.id,
+                          let playerID = txn.person?.id else {
+                        return true  // CU — always an active roster callup
+                    }
+                    return activeRosters[teamID]?.contains(playerID) == true
+                }
+
                 // Filter to rookie-eligible only (mirrors buildCard logic in TrackerViewModel)
-                let rookieCallups = await rookieEligible(from: newCallups)
+                let rookieCallups = await rookieEligible(from: confirmed)
 
                 if !rookieCallups.isEmpty {
                     // Report the running daily total so the alert count matches what the app shows

@@ -142,16 +142,6 @@ private struct RosterPerson: Decodable {
     let id: Int
 }
 
-// MARK: - Innings Parsing
-
-func parseInnings(_ ipString: String?) -> Double {
-    guard let ip = ipString, !ip.isEmpty else { return 0.0 }
-    let parts = ip.split(separator: ".")
-    guard let full = Double(parts[0]) else { return 0.0 }
-    let thirds = parts.count > 1 ? (Double(parts[1]) ?? 0.0) : 0.0
-    return full + (thirds / 3.0)
-}
-
 // MARK: - Errors
 
 enum APIError: LocalizedError {

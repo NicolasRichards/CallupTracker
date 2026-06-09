@@ -25,6 +25,9 @@ class TrackerViewModel: ObservableObject {
     var formattedDate: String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
+        // POSIX locale: this feeds API URLs, so it must not depend on the
+        // device's calendar setting (Buddhist/Japanese calendars shift the year).
+        f.locale = Locale(identifier: "en_US_POSIX")
         return f.string(from: selectedDate)
     }
 
@@ -91,7 +94,7 @@ class TrackerViewModel: ObservableObject {
     private func fetchCallups(for dateStr: String, isToday: Bool = true) async throws -> [PlayerCard] {
         let transactions = try await api.fetchTransactions(for: dateStr)
 
-        let callups = transactions.filter { isCallup($0) }
+        let callups = transactions.filter { $0.isLikelyCallup }
 
         var seen = Set<Int>()
         let unique = callups.filter { txn in
@@ -134,30 +137,6 @@ class TrackerViewModel: ObservableObject {
                 return $0.name < $1.name
             }
         }
-    }
-
-    private func isCallup(_ txn: Transaction) -> Bool {
-        // CU = recalled to the active 26-man roster (player already on 40-man).
-        // SE = selected from minors — can be a true active callup OR a 40-man-only
-        //      addition. SE transactions are verified against the live active roster
-        //      in fetchCallups() before any cards are built.
-        guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
-        guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-
-        if let fromID = txn.fromTeam?.id {
-            // fromTeam is provided — it must be a minor-league team (not an MLB club).
-            // If it's an MLB team, this is a trade/DFA claim, not a callup.
-            return !MLBAPIClient.mlbTeamIDs.contains(fromID)
-        }
-
-        // No fromTeam in API data — fall back to description heuristic.
-        // Accept only if the description mentions " from " but does NOT name
-        // an MLB club (e.g. "recalled from Iowa Cubs" passes, but
-        // "traded from Los Angeles Dodgers" does not).
-        guard let desc = txn.description, desc.lowercased().contains(" from ") else { return false }
-        let lower = desc.lowercased()
-        let mentionsMLBTeam = MLBAPIClient.allTeams.contains { lower.contains($0.name.lowercased()) }
-        return !mentionsMLBTeam
     }
 
     private func buildCard(from txn: Transaction, dateStr: String, brefDelayIndex: Int = 0) async throws -> PlayerCard? {

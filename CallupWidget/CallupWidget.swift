@@ -117,19 +117,60 @@ struct Provider: TimelineProvider {
         let decoded = try JSONDecoder().decode(WidgetTransactionsResponse.self, from: data)
 
         var seen = Set<Int>()
-        return decoded.transactions
+        let callups = decoded.transactions
             .filter { txn in
                 guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
                 guard let toID = txn.toTeam?.id, mlbTeamIDs.contains(toID) else { return false }
-                guard txn.fromTeam != nil, let id = txn.person?.id, !seen.contains(id) else { return false }
+                // fromTeam must be a minor-league club; an MLB fromTeam means
+                // a trade or waiver claim, not a callup.
+                guard let fromID = txn.fromTeam?.id, !mlbTeamIDs.contains(fromID) else { return false }
+                guard let id = txn.person?.id, !seen.contains(id) else { return false }
                 seen.insert(id)
                 return true
             }
-            .compactMap { txn -> CallupItem? in
-                guard let id = txn.person?.id, let name = txn.person?.fullName else { return nil }
-                return CallupItem(id: id, name: name, team: txn.toTeam?.name ?? "")
+
+        // Keep rookie-eligible players only (pitchers < 50 career IP, hitters
+        // < 130 career AB) so the fallback matches the widget's description.
+        var items: [CallupItem] = []
+        for txn in callups {
+            guard let id = txn.person?.id, let name = txn.person?.fullName else { continue }
+            let eligible = (try? await isRookieEligible(playerID: id, session: session)) ?? true
+            if eligible {
+                items.append(CallupItem(id: id, name: name, team: txn.toTeam?.name ?? ""))
             }
-            .sorted { $0.name < $1.name }
+        }
+        return items.sorted { $0.name < $1.name }
+    }
+
+    /// Mirrors NotificationManager's heuristic: pitchers with < 50 career IP,
+    /// hitters with < 130 career AB. Errs on the side of showing the player.
+    private func isRookieEligible(playerID: Int, session: URLSession) async throws -> Bool {
+        func careerStat(group: String) async throws -> WidgetStatLine? {
+            let urlStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)/stats?stats=career&group=\(group)&sportId=1"
+            guard let url = URL(string: urlStr) else { return nil }
+            let (data, _) = try await session.data(from: url)
+            let decoded = try JSONDecoder().decode(WidgetStatsResponse.self, from: data)
+            return decoded.stats.first?.splits.first?.stat
+        }
+
+        let infoStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)"
+        guard let infoURL = URL(string: infoStr) else { return true }
+        let (infoData, _) = try await session.data(from: infoURL)
+        let info = try JSONDecoder().decode(WidgetPeopleResponse.self, from: infoData)
+        let posAbbr = info.people.first?.primaryPosition?.abbreviation ?? ""
+        let isPitcher = ["P", "SP", "RP", "TWP"].contains(posAbbr)
+
+        if isPitcher {
+            let stat = try await careerStat(group: "pitching")
+            let ipStr = stat?.inningsPitched ?? "0"
+            let parts = ipStr.split(separator: ".")
+            let full = parts.first.flatMap { Double($0) } ?? 0
+            let thirds = parts.count > 1 ? (Double(parts[1]) ?? 0) : 0
+            return (full + thirds / 3.0) < 50
+        } else {
+            let stat = try await careerStat(group: "hitting")
+            return (stat?.atBats ?? 0) < 130
+        }
     }
 }
 
@@ -153,6 +194,28 @@ private struct WidgetTransaction: Decodable {
     let person: WidgetPerson?
     let toTeam: WidgetTeam?
     let fromTeam: WidgetTeam?
+}
+private struct WidgetPeopleResponse: Decodable {
+    let people: [WidgetPersonDetail]
+}
+private struct WidgetPersonDetail: Decodable {
+    let primaryPosition: WidgetPosition?
+}
+private struct WidgetPosition: Decodable {
+    let abbreviation: String?
+}
+private struct WidgetStatsResponse: Decodable {
+    let stats: [WidgetStatGroup]
+}
+private struct WidgetStatGroup: Decodable {
+    let splits: [WidgetStatSplit]
+}
+private struct WidgetStatSplit: Decodable {
+    let stat: WidgetStatLine?
+}
+private struct WidgetStatLine: Decodable {
+    let atBats: Int?
+    let inningsPitched: String?
 }
 private struct WidgetPerson: Decodable {
     let id: Int
