@@ -119,7 +119,9 @@ class TrackerViewModel: ObservableObject {
     }
 
     private func isCallup(_ txn: Transaction) -> Bool {
-        guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
+        // CU = recalled/called up to the active 26-man roster.
+        // SE = selected to the 40-man roster only — does NOT mean active roster.
+        guard let code = txn.typeCode, code == "CU" else { return false }
         guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
 
         if let fromID = txn.fromTeam?.id {
