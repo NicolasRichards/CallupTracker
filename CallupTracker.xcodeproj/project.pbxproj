@@ -15,11 +15,11 @@
 		01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CB2F4914C000C6E960 /* CareerStats.swift */; };
 		01A0B4CE2F4914DB00C6E960 /* PlayerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */; };
 		01A0B4D02F49151400C6E960 /* MLBAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */; };
-		01A0B4DA2F49155000C6E960 /* BaseballReferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */; };
 		01A0B4D22F49152100C6E960 /* TrackerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */; };
 		01A0B4D42F49152D00C6E960 /* PlayerCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */; };
 		01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D52F49153B00C6E960 /* StatsGridView.swift */; };
 		01A0B4D82F49154B00C6E960 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */; };
+		01A0B4DA2F49155000C6E960 /* BaseballReferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,11 +57,11 @@
 		01A0B4CB2F4914C000C6E960 /* CareerStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerStats.swift; sourceTree = "<group>"; };
 		01A0B4CD2F4914DB00C6E960 /* PlayerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCard.swift; sourceTree = "<group>"; };
 		01A0B4CF2F49151400C6E960 /* MLBAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLBAPIClient.swift; sourceTree = "<group>"; };
-		01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballReferenceClient.swift; sourceTree = "<group>"; };
 		01A0B4D12F49152100C6E960 /* TrackerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerViewModel.swift; sourceTree = "<group>"; };
 		01A0B4D32F49152D00C6E960 /* PlayerCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerCardView.swift; sourceTree = "<group>"; };
 		01A0B4D52F49153B00C6E960 /* StatsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsGridView.swift; sourceTree = "<group>"; };
 		01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballReferenceClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -339,7 +339,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
@@ -350,7 +350,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -371,7 +371,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
@@ -382,7 +382,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -524,7 +524,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CallupTracker/CallupTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -556,7 +556,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -580,7 +580,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CallupTracker/CallupTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 13;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -612,7 +612,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;

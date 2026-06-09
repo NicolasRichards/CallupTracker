@@ -129,7 +129,7 @@ struct ContentView: View {
             List {
                 callupListSection(title: "MLB Debut", cards: debut)
                 callupListSection(title: "Eligible — First Call-Up This Year", cards: firstThisYear)
-                callupListSection(title: "Eligible — Called Up Before This Year", cards: alreadyThisYear)
+                callupListSection(title: "Eligible — Called Up Already This Year", cards: alreadyThisYear)
                 callupListSection(title: "Not Eligible", cards: notEligible)
                 callupListSection(title: "B-Ref Rate Limited", cards: rateLimited)
             }
@@ -152,7 +152,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 26) {
                 callupGridSection(title: "MLB Debut", cards: debut)
                 callupGridSection(title: "Eligible — First Call-Up This Year", cards: firstThisYear)
-                callupGridSection(title: "Eligible — Called Up Before This Year", cards: alreadyThisYear)
+                callupGridSection(title: "Eligible — Called Up Already This Year", cards: alreadyThisYear)
                 callupGridSection(title: "Not Eligible", cards: notEligible)
                 callupGridSection(title: "B-Ref Rate Limited", cards: rateLimited)
             }
