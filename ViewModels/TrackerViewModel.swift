@@ -100,8 +100,26 @@ class TrackerViewModel: ObservableObject {
             return true
         }
 
+        // SE transactions can mean a true active-roster callup OR just a 40-man addition.
+        // Verify by fetching the live active roster for each team that has SE transactions.
+        // Batch by team — typically 0–2 teams per day — so at most a couple of extra calls.
+        let seTeamIDs = Set(unique.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
+        var activeRosters: [Int: Set<Int>] = [:]
+        for teamID in seTeamIDs {
+            activeRosters[teamID] = (try? await api.fetchActiveRosterIDs(teamID: teamID)) ?? []
+        }
+
+        let confirmed = unique.filter { txn in
+            guard txn.typeCode == "SE",
+                  let teamID = txn.toTeam?.id,
+                  let playerID = txn.person?.id else {
+                return true  // CU — always an active roster callup, no verification needed
+            }
+            return activeRosters[teamID]?.contains(playerID) == true
+        }
+
         return try await withThrowingTaskGroup(of: PlayerCard?.self) { group in
-            for (index, txn) in unique.enumerated() {
+            for (index, txn) in confirmed.enumerated() {
                 let brefDelay = isToday ? 0 : index
                 group.addTask { try await self.buildCard(from: txn, dateStr: dateStr, brefDelayIndex: brefDelay) }
             }
@@ -119,9 +137,11 @@ class TrackerViewModel: ObservableObject {
     }
 
     private func isCallup(_ txn: Transaction) -> Bool {
-        // CU = recalled/called up to the active 26-man roster.
-        // SE = selected to the 40-man roster only — does NOT mean active roster.
-        guard let code = txn.typeCode, code == "CU" else { return false }
+        // CU = recalled to the active 26-man roster (player already on 40-man).
+        // SE = selected from minors — can be a true active callup OR a 40-man-only
+        //      addition. SE transactions are verified against the live active roster
+        //      in fetchCallups() before any cards are built.
+        guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
         guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
 
         if let fromID = txn.fromTeam?.id {

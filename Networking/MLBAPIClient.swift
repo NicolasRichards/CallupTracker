@@ -102,6 +102,18 @@ struct MLBAPIClient: Sendable {
         return firstGroup.splits.first?.stat
     }
 
+    // MARK: - Active Roster
+
+    /// Returns the set of player IDs currently on the active 26-man roster for a team.
+    func fetchActiveRosterIDs(teamID: Int) async throws -> Set<Int> {
+        let urlString = "\(baseURL)/teams/\(teamID)/roster?rosterType=active"
+        guard let url = URL(string: urlString) else { throw APIError.invalidURL }
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validateResponse(response)
+        let roster = try JSONDecoder().decode(RosterResponse.self, from: data)
+        return Set(roster.roster.map { $0.person.id })
+    }
+
     // MARK: - Headshot URL
 
     static func headshotURL(for playerID: Int) -> URL? {
@@ -114,6 +126,20 @@ struct MLBAPIClient: Sendable {
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200...299).contains(http.statusCode) else { throw APIError.httpError(http.statusCode) }
     }
+}
+
+// MARK: - Roster Response
+
+private struct RosterResponse: Decodable {
+    let roster: [RosterEntry]
+}
+
+private struct RosterEntry: Decodable {
+    let person: RosterPerson
+}
+
+private struct RosterPerson: Decodable {
+    let id: Int
 }
 
 // MARK: - Innings Parsing
