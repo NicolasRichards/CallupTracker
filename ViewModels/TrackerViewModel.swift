@@ -218,8 +218,10 @@ class TrackerViewModel: ObservableObject {
         guard let txns = info.transactions else { return [] }
         return txns
             .filter { txn in
-                // CU or SE, but must have a fromTeam — excludes 40-man additions (no fromTeam)
-                guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
+                // CU only — "recalled" is specifically for active-roster callups.
+                // SE (selected) fires for 40-man additions too, and we can't verify
+                // active-roster status for historical dates the way we do for today.
+                guard let code = txn.typeCode, code == "CU" else { return false }
                 guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
                 guard txn.fromTeam != nil else { return false }
                 guard let date = txn.date else { return false }
