@@ -36,11 +36,17 @@ struct PlayerCard: Identifiable {
         case brefRateLimited    = 4
     }
 
+    var hasMLBCareerStats: Bool {
+        if let h = hittingStats  { return h.games > 0 }
+        if let p = pitchingStats { return p.games > 0 }
+        return false
+    }
+
     var callupBucket: CallupBucket {
-        if isBRefRateLimited        { return .brefRateLimited }
-        if !isRookieEligible        { return .notEligible }
-        if callupHistory.isEmpty    { return .mlbDebut }
-        if isFirstCallupThisSeason  { return .firstCallupThisYear }
+        if isBRefRateLimited                            { return .brefRateLimited }
+        if !isRookieEligible                            { return .notEligible }
+        if callupHistory.isEmpty && !hasMLBCareerStats  { return .mlbDebut }
+        if isFirstCallupThisSeason                      { return .firstCallupThisYear }
         return .alreadyCalledUpThisYear
     }
 }

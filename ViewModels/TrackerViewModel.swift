@@ -179,8 +179,10 @@ class TrackerViewModel: ObservableObject {
         }
 
         let callupHistory = extractCallupHistory(from: info, beforeDate: dateStr)
-        let currentYear = String(Calendar.current.component(.year, from: Date()))
-        let isFirstCallupThisSeason = !callupHistory.contains { $0.contains(currentYear) }
+        // Use CU+SE to determine whether the player has been on the active roster
+        // this year — SE is unreliable for showing specific dates but good enough
+        // for a yes/no year check. CU-only history is used for display.
+        let isFirstCallupThisSeason = !hasAnyCallupInCurrentYear(from: info, beforeDate: dateStr)
 
         // For historical dates, stagger uncached BBRef requests (300ms per player)
         // to avoid triggering rate limiting. Skip the delay for today and for cache hits.
@@ -232,6 +234,29 @@ class TrackerViewModel: ObservableObject {
             .reversed()
             .prefix(3)
             .map { $0 }
+    }
+
+    // Checks CU and SE transactions to determine whether the player was on the
+    // active 26-man roster at any point in the current calendar year before today.
+    // SE is included here (unlike in extractCallupHistory) because the year-level
+    // yes/no question is forgiving enough — a 40-man SE is unlikely to produce a
+    // false "already called up this year" for a player who truly wasn't.
+    private func hasAnyCallupInCurrentYear(from info: PlayerInfo, beforeDate: String) -> Bool {
+        guard let txns = info.transactions else { return false }
+        let currentYear = String(Calendar.current.component(.year, from: Date()))
+        return txns.contains { txn in
+            guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
+            guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
+            if let fromID = txn.fromTeam?.id {
+                guard !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
+            } else {
+                guard let desc = txn.description, desc.lowercased().contains(" from ") else { return false }
+                let lower = desc.lowercased()
+                guard !MLBAPIClient.allTeams.contains(where: { lower.contains($0.name.lowercased()) }) else { return false }
+            }
+            guard let date = txn.date, date.hasPrefix(currentYear) else { return false }
+            return date < beforeDate
+        }
     }
 
     // Regular season: last week of March through first week of October
