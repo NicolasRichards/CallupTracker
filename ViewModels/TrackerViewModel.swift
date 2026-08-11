@@ -247,13 +247,10 @@ class TrackerViewModel: ObservableObject {
         return txns.contains { txn in
             guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
             guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-            if let fromID = txn.fromTeam?.id {
-                guard !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
-            } else {
-                guard let desc = txn.description, desc.lowercased().contains(" from ") else { return false }
-                let lower = desc.lowercased()
-                guard !MLBAPIClient.allTeams.contains(where: { lower.contains($0.name.lowercased()) }) else { return false }
-            }
+            // PlayerTransaction has no description field, so skip transactions
+            // where fromTeam is nil — we can't tell if it's a trade or a callup.
+            guard let fromID = txn.fromTeam?.id,
+                  !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
             guard let date = txn.date, date.hasPrefix(currentYear) else { return false }
             return date < beforeDate
         }
