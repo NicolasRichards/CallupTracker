@@ -252,6 +252,7 @@ class TrackerViewModel: ObservableObject {
             guard let fromID = txn.fromTeam?.id,
                   !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
             guard let date = txn.date, date.hasPrefix(currentYear) else { return false }
+            guard isRegularSeason(date) else { return false }
             return date < beforeDate
         }
     }
