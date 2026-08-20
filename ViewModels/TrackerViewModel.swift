@@ -225,7 +225,8 @@ class TrackerViewModel: ObservableObject {
                 // active-roster status for historical dates the way we do for today.
                 guard let code = txn.typeCode, code == "CU" else { return false }
                 guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
-                guard txn.fromTeam != nil else { return false }
+                guard let fromID = txn.fromTeam?.id,
+                      !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
                 guard let date = txn.date else { return false }
                 guard isRegularSeason(date) else { return false }
                 return date < beforeDate
