@@ -266,8 +266,7 @@ class TrackerViewModel: ObservableObject {
         let month = cal.component(.month, from: date)
         let day = cal.component(.day, from: date)
         if month >= 4 && month <= 9 { return true }
-        if month == 3 && day >= 20 { return true }
-        if month == 10 && day <= 10 { return true }
+        if month == 3 && day >= 25 { return true }
         return false
     }
 
