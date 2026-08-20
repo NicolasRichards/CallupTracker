@@ -237,16 +237,16 @@ class TrackerViewModel: ObservableObject {
             .map { $0 }
     }
 
-    // Checks CU and SE transactions to determine whether the player was on the
-    // active 26-man roster at any point in the current calendar year before today.
-    // SE is included here (unlike in extractCallupHistory) because the year-level
-    // yes/no question is forgiving enough — a 40-man SE is unlikely to produce a
-    // false "already called up this year" for a player who truly wasn't.
+    // Checks whether the player had a CU (active-roster recall) in the current
+    // calendar year before today. CU-only matches extractCallupHistory so that
+    // the bucket classification is always consistent with what the history displays.
+    // SE is excluded — we can't verify historical active-roster status for SE
+    // transactions, and including them causes bucket/history disagreements.
     private func hasAnyCallupInCurrentYear(from info: PlayerInfo, beforeDate: String) -> Bool {
         guard let txns = info.transactions else { return false }
         let currentYear = String(Calendar.current.component(.year, from: Date()))
         return txns.contains { txn in
-            guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
+            guard let code = txn.typeCode, code == "CU" else { return false }
             guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
             // PlayerTransaction has no description field, so skip transactions
             // where fromTeam is nil — we can't tell if it's a trade or a callup.
