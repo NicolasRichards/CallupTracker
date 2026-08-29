@@ -152,12 +152,17 @@ final class NotificationManager: Sendable {
 
     private func send(callups: [Transaction], totalToday: Int) async {
         let content = UNMutableNotificationContent()
-        if totalToday == 1, let name = callups[0].person?.fullName, let team = callups[0].toTeam?.name {
-            content.title = "Rookie Called Up"
-            content.body = "\(name) called up to \(team)"
+        if let name = callups[0].person?.fullName, let team = callups[0].toTeam?.name {
+            if totalToday == 1 {
+                content.title = "Rookie Called Up"
+                content.body = "\(name) called up to \(team)"
+            } else {
+                content.title = "Rookie Callups Today"
+                content.body = "Includes \(name) — tap to see all"
+            }
         } else {
             content.title = "Rookie Callups Today"
-            content.body = "\(totalToday) rookie-eligible callups today"
+            content.body = "Tap to see today's rookie-eligible callups"
         }
         content.sound = .default
 
