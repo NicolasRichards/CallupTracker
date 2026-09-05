@@ -33,7 +33,7 @@ struct Provider: TimelineProvider {
         ], fetchFailed: false)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (CallupEntry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping @Sendable (CallupEntry) -> Void) {
         if context.isPreview {
             completion(placeholder(in: context))
             return
@@ -44,7 +44,7 @@ struct Provider: TimelineProvider {
         }
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<CallupEntry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<CallupEntry>) -> Void) {
         Task {
             let entry = await fetchTodayEntry()
 

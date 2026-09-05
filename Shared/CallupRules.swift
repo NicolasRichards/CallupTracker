@@ -14,7 +14,9 @@ import Foundation
 /// targets. The widget used to carry its own copy of the team-ID list and a
 /// stricter transaction filter, so the app and the widget could disagree about
 /// who was called up on the same day. Anything both targets rely on belongs here.
-enum CallupRules {
+/// Explicitly nonisolated: this is immutable data and pure functions, and both
+/// background refresh and the widget reach it from outside the main actor.
+nonisolated enum CallupRules {
 
     // MARK: - Clubs
 
