@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0AC0DE01000000000000AA02 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
+		0AC0DE01000000000000AA03 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
 		0100E7072FA58CE600F70F32 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7062FA58CE600F70F32 /* WidgetKit.framework */; };
 		0100E7092FA58CE600F70F32 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7082FA58CE600F70F32 /* SwiftUI.framework */; };
 		0100E7182FA58CE600F70F32 /* CallupWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -47,6 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0AC0DE01000000000000AA01 /* CallupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallupRules.swift; sourceTree = "<group>"; };
 		0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CallupWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0100E7062FA58CE600F70F32 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		0100E7082FA58CE600F70F32 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -137,6 +140,7 @@
 				01A0B4C52F49144D00C6E960 /* ViewModels */,
 				01A0B4C42F49144600C6E960 /* Networking */,
 				01A0B4C32F49143000C6E960 /* Models */,
+				0AC0DE01000000000000AA04 /* Shared */,
 				01A0B4B72F4912C200C6E960 /* CallupTracker */,
 				0100E70A2FA58CE600F70F32 /* CallupWidget */,
 				0100E7052FA58CE600F70F32 /* Frameworks */,
@@ -189,6 +193,14 @@
 				01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		0AC0DE01000000000000AA04 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				0AC0DE01000000000000AA01 /* CallupRules.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -300,6 +312,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0AC0DE01000000000000AA03 /* CallupRules.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,6 +329,7 @@
 				01A0B4CC2F4914C000C6E960 /* CareerStats.swift in Sources */,
 				01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */,
 				01A0B4C82F49149E00C6E960 /* Transaction.swift in Sources */,
+				0AC0DE01000000000000AA02 /* CallupRules.swift in Sources */,
 				01A0B4D82F49154B00C6E960 /* EmptyStateView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -344,7 +358,7 @@
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -376,7 +390,7 @@
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

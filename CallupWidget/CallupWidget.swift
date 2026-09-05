@@ -96,12 +96,6 @@ struct Provider: TimelineProvider {
     }
 
     private func fetchCallups(for dateStr: String) async throws -> [CallupItem] {
-        let mlbTeamIDs: Set<Int> = [
-            108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-            133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146,
-            147, 158
-        ]
-
         let urlStr = "https://statsapi.mlb.com/api/v1/transactions?startDate=\(dateStr)&endDate=\(dateStr)"
         guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
 
@@ -119,18 +113,22 @@ struct Provider: TimelineProvider {
         var seen = Set<Int>()
         let callups = decoded.transactions
             .filter { txn in
-                guard let code = txn.typeCode, (code == "CU" || code == "SE") else { return false }
-                guard let toID = txn.toTeam?.id, mlbTeamIDs.contains(toID) else { return false }
-                // fromTeam must be a minor-league club; an MLB fromTeam means
-                // a trade or waiver claim, not a callup.
-                guard let fromID = txn.fromTeam?.id, !mlbTeamIDs.contains(fromID) else { return false }
+                // Same test the app applies, including the description fallback
+                // for transactions the API returns without a fromTeam. The old
+                // copy here rejected those, so the widget silently dropped
+                // call-ups the app was showing.
+                guard CallupRules.isLikelyCallup(typeCode: txn.typeCode,
+                                                 toTeamID: txn.toTeam?.id,
+                                                 fromTeamID: txn.fromTeam?.id,
+                                                 description: txn.description) else { return false }
                 guard let id = txn.person?.id, !seen.contains(id) else { return false }
                 seen.insert(id)
                 return true
             }
 
-        // Keep rookie-eligible players only (pitchers < 50 career IP, hitters
-        // < 130 career AB) so the fallback matches the widget's description.
+        // Keep rookie-eligible players only. The app itself defers to Baseball
+        // Reference, which a widget cannot reach inside its time budget, so this
+        // fallback shares the MLB rookie-limit heuristic with background refresh.
         var items: [CallupItem] = []
         for txn in callups {
             guard let id = txn.person?.id, let name = txn.person?.fullName else { continue }
@@ -142,8 +140,8 @@ struct Provider: TimelineProvider {
         return items.sorted { $0.name < $1.name }
     }
 
-    /// Mirrors NotificationManager's heuristic: pitchers with < 50 career IP,
-    /// hitters with < 130 career AB. Errs on the side of showing the player.
+    /// Shares NotificationManager's heuristic via CallupRules. Errs on the side
+    /// of showing the player when the lookup fails.
     private func isRookieEligible(playerID: Int, session: URLSession) async throws -> Bool {
         func careerStat(group: String) async throws -> WidgetStatLine? {
             let urlStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)/stats?stats=career&group=\(group)&sportId=1"
@@ -158,18 +156,20 @@ struct Provider: TimelineProvider {
         let (infoData, _) = try await session.data(from: infoURL)
         let info = try JSONDecoder().decode(WidgetPeopleResponse.self, from: infoData)
         let posAbbr = info.people.first?.primaryPosition?.abbreviation ?? ""
-        let isPitcher = ["P", "SP", "RP", "TWP"].contains(posAbbr)
+        let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
 
         if isPitcher {
             let stat = try await careerStat(group: "pitching")
-            let ipStr = stat?.inningsPitched ?? "0"
-            let parts = ipStr.split(separator: ".")
-            let full = parts.first.flatMap { Double($0) } ?? 0
-            let thirds = parts.count > 1 ? (Double(parts[1]) ?? 0) : 0
-            return (full + thirds / 3.0) < 50
+            return CallupRules.passesRookieLimits(
+                isPitcher: true,
+                careerInningsPitched: stat?.inningsPitched,
+                careerAtBats: nil)
         } else {
             let stat = try await careerStat(group: "hitting")
-            return (stat?.atBats ?? 0) < 130
+            return CallupRules.passesRookieLimits(
+                isPitcher: false,
+                careerInningsPitched: nil,
+                careerAtBats: stat?.atBats)
         }
     }
 }
@@ -194,6 +194,7 @@ private struct WidgetTransaction: Decodable {
     let person: WidgetPerson?
     let toTeam: WidgetTeam?
     let fromTeam: WidgetTeam?
+    let description: String?
 }
 private struct WidgetPeopleResponse: Decodable {
     let people: [WidgetPersonDetail]
@@ -310,14 +311,8 @@ struct CallupWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            if #available(iOS 17.0, *) {
-                CallupWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
-            } else {
-                CallupWidgetEntryView(entry: entry)
-                    .padding()
-                    .background()
-            }
+            CallupWidgetEntryView(entry: entry)
+                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Rookie Callups")
         .description("See today's rookie-eligible callups at a glance.")

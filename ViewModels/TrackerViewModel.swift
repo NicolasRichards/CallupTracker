@@ -146,7 +146,7 @@ class TrackerViewModel: ObservableObject {
         guard let info = try await api.fetchPlayerInfo(playerID: playerID) else { return nil }
         let posAbbr = info.primaryPosition?.abbreviation ?? ""
         let posName = info.primaryPosition?.name ?? posAbbr
-        let isPitcher = ["P", "SP", "RP", "TWP"].contains(posAbbr)
+        let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
 
         var displayHitting: DisplayHittingStats? = nil
         var displayPitching: DisplayPitchingStats? = nil

@@ -19,44 +19,13 @@ struct MLBAPIClient: Sendable {
 
     private let baseURL = "https://statsapi.mlb.com/api/v1"
 
-    static let mlbTeamIDs: Set<Int> = [
-        108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121,
-        133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146,
-        147, 158
-    ]
+    /// Both derive from CallupRules, which the widget extension also compiles,
+    /// so the app and the widget can never drift apart on club membership.
+    static let mlbTeamIDs: Set<Int> = CallupRules.mlbTeamIDs
 
-    static let allTeams: [MLBTeam] = [
-        .init(id: 109, name: "Arizona Diamondbacks",   abbreviation: "ARI"),
-        .init(id: 144, name: "Atlanta Braves",          abbreviation: "ATL"),
-        .init(id: 110, name: "Baltimore Orioles",       abbreviation: "BAL"),
-        .init(id: 111, name: "Boston Red Sox",          abbreviation: "BOS"),
-        .init(id: 112, name: "Chicago Cubs",            abbreviation: "CHC"),
-        .init(id: 145, name: "Chicago White Sox",       abbreviation: "CWS"),
-        .init(id: 113, name: "Cincinnati Reds",         abbreviation: "CIN"),
-        .init(id: 114, name: "Cleveland Guardians",     abbreviation: "CLE"),
-        .init(id: 115, name: "Colorado Rockies",        abbreviation: "COL"),
-        .init(id: 116, name: "Detroit Tigers",          abbreviation: "DET"),
-        .init(id: 117, name: "Houston Astros",          abbreviation: "HOU"),
-        .init(id: 118, name: "Kansas City Royals",      abbreviation: "KC"),
-        .init(id: 108, name: "Los Angeles Angels",      abbreviation: "LAA"),
-        .init(id: 119, name: "Los Angeles Dodgers",     abbreviation: "LAD"),
-        .init(id: 146, name: "Miami Marlins",           abbreviation: "MIA"),
-        .init(id: 158, name: "Milwaukee Brewers",       abbreviation: "MIL"),
-        .init(id: 142, name: "Minnesota Twins",         abbreviation: "MIN"),
-        .init(id: 121, name: "New York Mets",           abbreviation: "NYM"),
-        .init(id: 147, name: "New York Yankees",        abbreviation: "NYY"),
-        .init(id: 133, name: "Oakland Athletics",       abbreviation: "OAK"),
-        .init(id: 143, name: "Philadelphia Phillies",   abbreviation: "PHI"),
-        .init(id: 134, name: "Pittsburgh Pirates",      abbreviation: "PIT"),
-        .init(id: 135, name: "San Diego Padres",        abbreviation: "SD"),
-        .init(id: 137, name: "San Francisco Giants",    abbreviation: "SF"),
-        .init(id: 136, name: "Seattle Mariners",        abbreviation: "SEA"),
-        .init(id: 138, name: "St. Louis Cardinals",     abbreviation: "STL"),
-        .init(id: 139, name: "Tampa Bay Rays",          abbreviation: "TB"),
-        .init(id: 140, name: "Texas Rangers",           abbreviation: "TEX"),
-        .init(id: 141, name: "Toronto Blue Jays",       abbreviation: "TOR"),
-        .init(id: 120, name: "Washington Nationals",    abbreviation: "WSH"),
-    ]
+    static let allTeams: [MLBTeam] = CallupRules.clubs.map {
+        MLBTeam(id: $0.id, name: $0.name, abbreviation: $0.abbreviation)
+    }
 
     // MARK: - Transactions
 

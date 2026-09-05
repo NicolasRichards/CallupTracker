@@ -123,21 +123,23 @@ final class NotificationManager: Sendable {
                     else { return nil }
 
                     let posAbbr = info.primaryPosition?.abbreviation ?? ""
-                    let isPitcher = ["P", "SP", "RP", "TWP"].contains(posAbbr)
+                    let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
 
+                    let eligible: Bool
                     if isPitcher {
                         let raw = try? await MLBAPIClient.shared.fetchCareerPitching(playerID: playerID)
-                        let ipStr = raw?.inningsPitched ?? "0"
-                        let ipParts = ipStr.split(separator: ".")
-                        let ipFull = Double(ipParts.first ?? "0") ?? 0
-                        let ipThirds = Double(ipParts.dropFirst().first ?? "0") ?? 0
-                        let ip = ipFull + ipThirds / 3.0
-                        return ip < 50 ? txn : nil
+                        eligible = CallupRules.passesRookieLimits(
+                            isPitcher: true,
+                            careerInningsPitched: raw?.inningsPitched,
+                            careerAtBats: nil)
                     } else {
                         let raw = try? await MLBAPIClient.shared.fetchCareerHitting(playerID: playerID)
-                        let ab = raw.flatMap { $0.atBats } ?? 0
-                        return ab < 130 ? txn : nil
+                        eligible = CallupRules.passesRookieLimits(
+                            isPitcher: false,
+                            careerInningsPitched: nil,
+                            careerAtBats: raw?.atBats)
                     }
+                    return eligible ? txn : nil
                 }
             }
             var result: [Transaction] = []
