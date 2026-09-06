@@ -37,7 +37,7 @@ struct ContentView: View {
         .frame(minWidth: 600, minHeight: 500)
         #endif
         .onAppear { viewModel.loadCards() }
-        .onChange(of: scenePhase) { phase in
+        .onChange(of: scenePhase) { _, phase in
             if phase == .active { viewModel.loadCards() }
         }
     }
@@ -65,7 +65,7 @@ struct ContentView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(Color.yellow.opacity(0.18))
-                .onChange(of: secondsRemaining) { remaining in
+                .onChange(of: secondsRemaining) { _, remaining in
                     // Keep `now` fresh so the banner's visibility condition
                     // re-evaluates and it disappears when the window expires.
                     if remaining <= 0 { now = Date() }
@@ -217,7 +217,7 @@ struct ContentView: View {
             )
             .labelsHidden()
             .datePickerStyle(.compact)
-            .onChange(of: viewModel.selectedDate) { _ in
+            .onChange(of: viewModel.selectedDate) {
                 viewModel.loadCards()
             }
 
