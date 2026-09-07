@@ -13,7 +13,7 @@
           "locale": "en_US"
         }
       ],
-      "productID": "NickRichards.MLBCallups.tip.small",
+      "productID": "NickRichards.CallupTracker.tip.small",
       "referenceName": "Small Tip",
       "type": "Consumable"
     },
@@ -28,7 +28,7 @@
           "locale": "en_US"
         }
       ],
-      "productID": "NickRichards.MLBCallups.tip.medium",
+      "productID": "NickRichards.CallupTracker.tip.medium",
       "referenceName": "Medium Tip",
       "type": "Consumable"
     },
@@ -43,7 +43,7 @@
           "locale": "en_US"
         }
       ],
-      "productID": "NickRichards.MLBCallups.tip.large",
+      "productID": "NickRichards.CallupTracker.tip.large",
       "referenceName": "Large Tip",
       "type": "Consumable"
     }

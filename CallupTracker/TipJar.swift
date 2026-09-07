@@ -9,9 +9,9 @@ import StoreKit
 @Observable
 final class TipJar {
     static let productIDs = [
-        "NickRichards.MLBCallups.tip.small",
-        "NickRichards.MLBCallups.tip.medium",
-        "NickRichards.MLBCallups.tip.large",
+        "NickRichards.CallupTracker.tip.small",
+        "NickRichards.CallupTracker.tip.medium",
+        "NickRichards.CallupTracker.tip.large",
     ]
 
     /// Shared because the transaction listener has to outlive any one screen.
