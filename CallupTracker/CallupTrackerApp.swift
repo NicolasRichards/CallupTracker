@@ -19,6 +19,7 @@ struct CallupTrackerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task { await TipJar.shared.listenForTransactions() }
                 .onAppear {
                     #if os(iOS)
                     NotificationManager.shared.requestPermission()

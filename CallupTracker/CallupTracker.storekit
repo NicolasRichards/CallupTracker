@@ -1,0 +1,62 @@
+{
+  "identifier": "9D61D4CC-F75D-4961-9874-DE83D3CFCA64",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "DDBA2B16-5518-4A18-8928-C4CABC122C94",
+      "localizations": [
+        {
+          "description": "A small thank-you for a free app.",
+          "displayName": "Small Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "NickRichards.MLBCallups.tip.small",
+      "referenceName": "Small Tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "3.99",
+      "familyShareable": false,
+      "internalID": "6DCB42C7-9CF2-49F1-AF93-0D0B34079D3B",
+      "localizations": [
+        {
+          "description": "A generous thank-you for a free app.",
+          "displayName": "Medium Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "NickRichards.MLBCallups.tip.medium",
+      "referenceName": "Medium Tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "918C7DA2-B27B-4CF0-AC8A-4FCB8E18326C",
+      "localizations": [
+        {
+          "description": "A very generous thank-you for a free app.",
+          "displayName": "Large Tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "NickRichards.MLBCallups.tip.large",
+      "referenceName": "Large Tip",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

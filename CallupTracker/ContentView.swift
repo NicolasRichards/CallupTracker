@@ -13,6 +13,7 @@ struct ContentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @State private var now: Date = Date()
+    @State private var showingAbout = false
 
     private var gridColumns: [GridItem] {
         #if os(macOS)
@@ -39,6 +40,9 @@ struct ContentView: View {
         .onAppear { viewModel.loadCards() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { viewModel.loadCards() }
+        }
+        .sheet(isPresented: $showingAbout) {
+            AboutView()
         }
     }
 
@@ -203,7 +207,7 @@ struct ContentView: View {
     // MARK: - Nav Bar
 
     private var dateNavBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Button(action: viewModel.goToPreviousDay) {
                 Image(systemName: "chevron.left")
             }
@@ -217,6 +221,9 @@ struct ContentView: View {
             )
             .labelsHidden()
             .datePickerStyle(.compact)
+            // Wins the width contest against the trailing controls, so the
+            // date keeps its long form ("Sep 7, 2026") instead of "9/7/26".
+            .layoutPriority(1)
             .onChange(of: viewModel.selectedDate) {
                 viewModel.loadCards()
             }
@@ -269,7 +276,18 @@ struct ContentView: View {
                 Text("\(count) call-up\(count == 1 ? "" : "s")")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    // The info button leaves this little room on a compact
+                    // iPhone; without this the label wraps one word per line.
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
+
+            Button { showingAbout = true } label: {
+                Image(systemName: "info.circle")
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("About")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
