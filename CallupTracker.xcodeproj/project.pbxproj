@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0AC0DE01000000000000AA02 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
-		0AC0DE01000000000000AA03 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
 		0100E7072FA58CE600F70F32 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7062FA58CE600F70F32 /* WidgetKit.framework */; };
 		0100E7092FA58CE600F70F32 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0100E7082FA58CE600F70F32 /* SwiftUI.framework */; };
 		0100E7182FA58CE600F70F32 /* CallupWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -22,6 +20,8 @@
 		01A0B4D62F49153B00C6E960 /* StatsGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D52F49153B00C6E960 /* StatsGridView.swift */; };
 		01A0B4D82F49154B00C6E960 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */; };
 		01A0B4DA2F49155000C6E960 /* BaseballReferenceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */; };
+		0AC0DE01000000000000AA02 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
+		0AC0DE01000000000000AA03 /* CallupRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC0DE01000000000000AA01 /* CallupRules.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,7 +49,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0AC0DE01000000000000AA01 /* CallupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallupRules.swift; sourceTree = "<group>"; };
 		0100E7042FA58CE600F70F32 /* CallupWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CallupWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0100E7062FA58CE600F70F32 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		0100E7082FA58CE600F70F32 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -65,6 +64,7 @@
 		01A0B4D52F49153B00C6E960 /* StatsGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsGridView.swift; sourceTree = "<group>"; };
 		01A0B4D72F49154B00C6E960 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		01A0B4D92F49155000C6E960 /* BaseballReferenceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseballReferenceClient.swift; sourceTree = "<group>"; };
+		0AC0DE01000000000000AA01 /* CallupRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallupRules.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -353,7 +353,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
@@ -364,7 +364,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.11;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -385,7 +385,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = CallupWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CallupWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CallupWidget;
@@ -396,7 +396,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.11;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups.CallupWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -538,7 +538,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CallupTracker/CallupTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -570,7 +570,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.11;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -594,7 +594,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CallupTracker/CallupTracker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 21;
+				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
@@ -626,7 +626,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.11;
 				PRODUCT_BUNDLE_IDENTIFIER = NickRichards.MLBCallups;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
