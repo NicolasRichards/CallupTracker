@@ -179,10 +179,12 @@ class TrackerViewModel: ObservableObject {
         }
 
         let callupHistory = extractCallupHistory(from: info, beforeDate: dateStr)
-        // Use CU+SE to determine whether the player has been on the active roster
-        // this year — SE is unreliable for showing specific dates but good enough
-        // for a yes/no year check. CU-only history is used for display.
-        let isFirstCallupThisSeason = !hasAnyCallupInCurrentYear(from: info, beforeDate: dateStr)
+        // Primary check: current-year MLB games played > 0 means the player has
+        // appeared in a game this year — definitively on the active roster at some point.
+        // Fallback: CU transaction check for players called up today but not yet in a game.
+        let currentYearStats = try? await api.fetchCurrentYearStats(playerID: playerID, group: isPitcher ? "pitching" : "hitting")
+        let hasCurrentYearGames = (currentYearStats?.gamesPlayed ?? 0) > 0
+        let isFirstCallupThisSeason = !hasCurrentYearGames && !hasAnyCallupInCurrentYear(from: info, beforeDate: dateStr)
 
         // For historical dates, stagger uncached BBRef requests (300ms per player)
         // to avoid triggering rate limiting. Skip the delay for today and for cache hits.

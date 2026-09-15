@@ -71,6 +71,25 @@ struct MLBAPIClient: Sendable {
         return firstGroup.splits.first?.stat
     }
 
+    // MARK: - Current-Year Stats
+
+    /// Returns the current-season StatLine for a player (MLB regular season only).
+    /// Games played > 0 means the player has appeared in an MLB game this year,
+    /// which is a reliable signal that they have been on the active roster.
+    func fetchCurrentYearStats(playerID: Int, group: String) async throws -> StatLine? {
+        let year = Calendar.current.component(.year, from: Date())
+        let urlString = "\(baseURL)/people/\(playerID)/stats?stats=season&season=\(year)&group=\(group)&sportId=1"
+        guard let url = URL(string: urlString) else { throw APIError.invalidURL }
+        let (data, response) = try await URLSession.shared.data(from: url)
+        try validateResponse(response)
+        let groups = try JSONDecoder().decode(StatsResponse.self, from: data).stats
+        guard let firstGroup = groups.first else { return nil }
+        if let mlbRegular = firstGroup.splits.first(where: { $0.sport?.id == 1 && $0.gameType == "R" }) {
+            return mlbRegular.stat
+        }
+        return firstGroup.splits.first?.stat
+    }
+
     // MARK: - Active Roster
 
     /// Returns the set of player IDs currently on the active 26-man roster for a team.
