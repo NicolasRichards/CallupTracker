@@ -73,6 +73,11 @@ struct AboutView: View {
                         .font(.subheadline)
                         .foregroundStyle(.tint)
                         .padding(.vertical, 8)
+                } else if tipJar.awaitingApproval {
+                    Text("Waiting for approval. Thank you!")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
                 } else if tipJar.loadFailed {
                     Text("Tip options couldn't load right now.")
                         .font(.footnote)
