@@ -23,7 +23,8 @@ final class TipJar {
     private(set) var products: [Product] = []
     private(set) var isLoading = false
     private(set) var purchasing: Product.ID?
-    private(set) var didTip = false
+    private static let didTipKey = "tipJarDidTip"
+    private(set) var didTip = UserDefaults.standard.bool(forKey: didTipKey)
     /// A purchase came back `.pending` (Ask to Buy) and is waiting on approval.
     private(set) var awaitingApproval = false
     var loadFailed = false
@@ -59,6 +60,7 @@ final class TipJar {
             if case .verified = update, awaitingApproval {
                 awaitingApproval = false
                 didTip = true
+                UserDefaults.standard.set(true, forKey: Self.didTipKey)
             }
         }
     }
@@ -74,6 +76,7 @@ final class TipJar {
                 await verification.unsafePayloadValue.finish()
                 if case .verified = verification {
                     didTip = true
+                    UserDefaults.standard.set(true, forKey: Self.didTipKey)
                 }
             case .pending:
                 awaitingApproval = true

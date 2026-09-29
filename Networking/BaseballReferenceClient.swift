@@ -14,56 +14,19 @@ struct BaseballReferenceClient {
         case rateLimited
     }
 
-    // MARK: - Cache
+    // Actor serialises all reads and writes, eliminating the concurrent
+    // read-modify-write race. Prunes prior-season entries on each write so
+    // the UserDefaults blob doesn't grow unboundedly across seasons.
+    private static let cache = BRefCacheStore()
 
-    // Cache rookie status per player per season year.
-    // rateLimited results are never cached — always re-fetch those.
-    // Cache expires after 7 days to pick up mid-season changes.
-    private static let cacheKey = "brefRookieStatusCache"
-    private static let cacheTTLSeconds: TimeInterval = 7 * 24 * 60 * 60
-
-    private struct CachedEntry: Codable {
-        let status: RookieStatus
-        let timestamp: Date
-    }
-
-    private func cacheKey(for mlbID: Int) -> String {
-        let year = Calendar.current.component(.year, from: Date())
-        return "\(mlbID)_\(year)"
-    }
-
-    private func cachedStatus(for mlbID: Int) -> RookieStatus? {
-        guard
-            let data = UserDefaults.standard.data(forKey: Self.cacheKey),
-            let cache = try? JSONDecoder().decode([String: CachedEntry].self, from: data),
-            let entry = cache[cacheKey(for: mlbID)],
-            Date().timeIntervalSince(entry.timestamp) < Self.cacheTTLSeconds
-        else { return nil }
-        return entry.status
-    }
-
-    private func store(status: RookieStatus, for mlbID: Int) {
-        let key = cacheKey(for: mlbID)
-        var cache: [String: CachedEntry] = [:]
-        if let data = UserDefaults.standard.data(forKey: Self.cacheKey),
-           let existing = try? JSONDecoder().decode([String: CachedEntry].self, from: data) {
-            cache = existing
-        }
-        cache[key] = CachedEntry(status: status, timestamp: Date())
-        if let encoded = try? JSONEncoder().encode(cache) {
-            UserDefaults.standard.set(encoded, forKey: Self.cacheKey)
-        }
-    }
-
-    func hasCachedStatus(forMLBID mlbID: Int) -> Bool {
-        cachedStatus(for: mlbID) != nil
+    func hasCachedStatus(forMLBID mlbID: Int) async -> Bool {
+        await Self.cache.get(mlbID: mlbID) != nil
     }
 
     // MARK: - Fetch
 
     func fetchRookieStatus(forMLBID mlbID: Int) async -> BaseballReferenceLookup {
-        // Return cached result if available (never cache rateLimited)
-        if let cached = cachedStatus(for: mlbID) {
+        if let cached = await Self.cache.get(mlbID: mlbID) {
             return BaseballReferenceLookup(status: cached, retryAfterSeconds: nil)
         }
 
@@ -103,22 +66,61 @@ struct BaseballReferenceClient {
             }
 
             if lowerHTML.contains("exceeded rookie limits") {
-                store(status: .exceededRookieLimits, for: mlbID)
+                await Self.cache.set(.exceededRookieLimits, mlbID: mlbID)
                 return BaseballReferenceLookup(status: .exceededRookieLimits, retryAfterSeconds: nil)
             }
 
-            if lowerHTML.contains("still intact") {
-                store(status: .rookieEligible, for: mlbID)
-                return BaseballReferenceLookup(status: .rookieEligible, retryAfterSeconds: nil)
-            }
-
-            // No rookie status section on an otherwise valid page — player has no prior
-            // MLB service time, so rookie status is intact by definition
-            store(status: .rookieEligible, for: mlbID)
+            // "still intact" or no rookie section — eligible either way
+            await Self.cache.set(.rookieEligible, mlbID: mlbID)
             return BaseballReferenceLookup(status: .rookieEligible, retryAfterSeconds: nil)
         } catch {
             // Network error — treat as rate limited so we don't silently mis-classify
             return BaseballReferenceLookup(status: .rateLimited, retryAfterSeconds: nil)
+        }
+    }
+}
+
+// MARK: - Cache actor
+
+// Serialises every cache read and write so concurrent BRef completions can't
+// interleave their read-modify-write on the UserDefaults blob and silently
+// drop each other's entries. Also prunes prior-season entries on each write.
+private actor BRefCacheStore {
+    private let defaultsKey = "brefRookieStatusCache"
+    private let ttl: TimeInterval = 7 * 24 * 60 * 60
+
+    private struct Entry: Codable {
+        let status: BaseballReferenceClient.RookieStatus
+        let timestamp: Date
+    }
+
+    private var currentYear: String {
+        String(Calendar.current.component(.year, from: Date()))
+    }
+
+    func get(mlbID: Int) -> BaseballReferenceClient.RookieStatus? {
+        let key = "\(mlbID)_\(currentYear)"
+        guard
+            let data = UserDefaults.standard.data(forKey: defaultsKey),
+            let cache = try? JSONDecoder().decode([String: Entry].self, from: data),
+            let entry = cache[key],
+            Date().timeIntervalSince(entry.timestamp) < ttl
+        else { return nil }
+        return entry.status
+    }
+
+    func set(_ status: BaseballReferenceClient.RookieStatus, mlbID: Int) {
+        let year = currentYear
+        let key = "\(mlbID)_\(year)"
+        var cache: [String: Entry] = [:]
+        if let data = UserDefaults.standard.data(forKey: defaultsKey),
+           let existing = try? JSONDecoder().decode([String: Entry].self, from: data) {
+            // Drop entries from prior seasons so the blob doesn't grow indefinitely
+            cache = existing.filter { $0.key.hasSuffix("_\(year)") }
+        }
+        cache[key] = Entry(status: status, timestamp: Date())
+        if let encoded = try? JSONEncoder().encode(cache) {
+            UserDefaults.standard.set(encoded, forKey: defaultsKey)
         }
     }
 }

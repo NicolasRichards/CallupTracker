@@ -85,7 +85,7 @@ struct PlayerCardView: View {
                             .foregroundStyle(.secondary)
                             .textCase(.uppercase)
                             .tracking(0.5)
-                        ForEach(card.callupHistory, id: \.self) { date in
+                        ForEach(Array(card.callupHistory.enumerated()), id: \.offset) { _, date in
                             Text(date)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)

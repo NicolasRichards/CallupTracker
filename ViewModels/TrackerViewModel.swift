@@ -84,7 +84,13 @@ class TrackerViewModel: ObservableObject {
                 // User navigated away — ignore
             } catch {
                 guard !Task.isCancelled else { return }
-                self.loadingState = .error(error.localizedDescription)
+                let message: String
+                if error is DecodingError {
+                    message = "Couldn't read the MLB data. Try again in a moment."
+                } else {
+                    message = "Couldn't load call-ups. Check your connection and try again."
+                }
+                self.loadingState = .error(message)
             }
         }
     }
@@ -188,8 +194,11 @@ class TrackerViewModel: ObservableObject {
 
         // For historical dates, stagger uncached BBRef requests (300ms per player)
         // to avoid triggering rate limiting. Skip the delay for today and for cache hits.
-        if brefDelayIndex > 0, !BaseballReferenceClient.shared.hasCachedStatus(forMLBID: playerID) {
-            try await Task.sleep(nanoseconds: UInt64(brefDelayIndex) * 300_000_000)
+        if brefDelayIndex > 0 {
+            let isCached = await BaseballReferenceClient.shared.hasCachedStatus(forMLBID: playerID)
+            if !isCached {
+                try await Task.sleep(nanoseconds: UInt64(brefDelayIndex) * 300_000_000)
+            }
         }
 
         // Use Baseball Reference as the arbiter of rookie eligibility

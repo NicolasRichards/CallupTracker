@@ -55,7 +55,7 @@ struct Provider: TimelineProvider {
             } else {
                 // Refresh at 6 AM tomorrow once we have data
                 var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
-                components.day! += 1
+                components.day = (components.day ?? 0) + 1
                 components.hour = 6
                 components.minute = 0
                 nextUpdate = Calendar.current.date(from: components) ?? Date(timeIntervalSinceNow: 8 * 3600)

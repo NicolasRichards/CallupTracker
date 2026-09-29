@@ -37,8 +37,7 @@ struct ContentView: View {
         #if os(macOS)
         .frame(minWidth: 600, minHeight: 500)
         #endif
-        .onAppear { viewModel.loadCards() }
-        .onChange(of: scenePhase) { _, phase in
+        .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active { viewModel.loadCards() }
         }
         .sheet(isPresented: $showingAbout) {
