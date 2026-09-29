@@ -126,11 +126,30 @@ struct Provider: TimelineProvider {
                 return true
             }
 
+        // SE transactions can be 40-man-only additions. Verify against the live
+        // active roster (mirrors fetchCallups in TrackerViewModel) so the widget
+        // never shows a player the main app would exclude.
+        let seTeamIDs = Set(callups.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
+        var activeRosters: [Int: Set<Int>] = [:]
+        for teamID in seTeamIDs {
+            if let ids = try? await fetchActiveRosterIDs(teamID: teamID, session: session) {
+                activeRosters[teamID] = ids
+            }
+        }
+        let verified = callups.filter { txn in
+            guard txn.typeCode == "SE",
+                  let teamID = txn.toTeam?.id,
+                  let playerID = txn.person?.id else {
+                return true  // CU — always an active roster callup
+            }
+            return activeRosters[teamID]?.contains(playerID) == true
+        }
+
         // Keep rookie-eligible players only. The app itself defers to Baseball
         // Reference, which a widget cannot reach inside its time budget, so this
         // fallback shares the MLB rookie-limit heuristic with background refresh.
         var items: [CallupItem] = []
-        for txn in callups {
+        for txn in verified {
             guard let id = txn.person?.id, let name = txn.person?.fullName else { continue }
             let eligible = (try? await isRookieEligible(playerID: id, session: session)) ?? true
             if eligible {
@@ -138,6 +157,14 @@ struct Provider: TimelineProvider {
             }
         }
         return items.sorted { $0.name < $1.name }
+    }
+
+    private func fetchActiveRosterIDs(teamID: Int, session: URLSession) async throws -> Set<Int> {
+        let urlStr = "https://statsapi.mlb.com/api/v1/teams/\(teamID)/roster?rosterType=active"
+        guard let url = URL(string: urlStr) else { return [] }
+        let (data, _) = try await session.data(from: url)
+        let decoded = try JSONDecoder().decode(WidgetRosterResponse.self, from: data)
+        return Set(decoded.roster.map { $0.person.id })
     }
 
     /// Shares NotificationManager's heuristic via CallupRules. Errs on the side
@@ -148,7 +175,10 @@ struct Provider: TimelineProvider {
             guard let url = URL(string: urlStr) else { return nil }
             let (data, _) = try await session.data(from: url)
             let decoded = try JSONDecoder().decode(WidgetStatsResponse.self, from: data)
-            return decoded.stats.first?.splits.first?.stat
+            // Prefer the MLB regular-season split to exclude postseason IP/ABs,
+            // which would overstate career totals and incorrectly block rookie-eligible players.
+            let splits = decoded.stats.first?.splits ?? []
+            return splits.first(where: { $0.gameType == "R" })?.stat ?? splits.first?.stat
         }
 
         let infoStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)"
@@ -212,7 +242,17 @@ private struct WidgetStatGroup: Decodable {
     let splits: [WidgetStatSplit]
 }
 private struct WidgetStatSplit: Decodable {
+    let gameType: String?
     let stat: WidgetStatLine?
+}
+private struct WidgetRosterResponse: Decodable {
+    let roster: [WidgetRosterEntry]
+}
+private struct WidgetRosterEntry: Decodable {
+    let person: WidgetRosterPerson
+}
+private struct WidgetRosterPerson: Decodable {
+    let id: Int
 }
 private struct WidgetStatLine: Decodable {
     let atBats: Int?
