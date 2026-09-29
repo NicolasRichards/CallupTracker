@@ -51,13 +51,13 @@ class TrackerViewModel: ObservableObject {
 
     func goToPreviousDay() {
         selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-        loadCards()
+        // loadCards() is triggered by ContentView's onChange(of: selectedDate)
     }
 
     func goToNextDay() {
         guard !isAtToday else { return }
         selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) ?? selectedDate
-        loadCards()
+        // loadCards() is triggered by ContentView's onChange(of: selectedDate)
     }
 
     // MARK: - Loading
@@ -66,6 +66,7 @@ class TrackerViewModel: ObservableObject {
         loadingTask?.cancel()
         cards = []
         loadingState = .loading
+        brefRateLimitUntil = nil   // cleared each load; re-set below if a 429 is encountered
         let dateStr = formattedDate
         let loadingToday = isAtToday
 
@@ -185,10 +186,12 @@ class TrackerViewModel: ObservableObject {
         }
 
         let callupHistory = extractCallupHistory(from: info, beforeDate: dateStr)
-        // Primary check: current-year MLB games played > 0 means the player has
-        // appeared in a game this year — definitively on the active roster at some point.
+        // Primary check: season stats for the viewed year — games played > 0 means
+        // the player has appeared in a game that year, regardless of transaction code.
+        // Use the year from dateStr (not Date()) so historical browsing works correctly.
         // Fallback: CU transaction check for players called up today but not yet in a game.
-        let currentYearStats = try? await api.fetchCurrentYearStats(playerID: playerID, group: isPitcher ? "pitching" : "hitting")
+        let viewedYear = Int(dateStr.prefix(4)) ?? Calendar.current.component(.year, from: Date())
+        let currentYearStats = try? await api.fetchCurrentYearStats(playerID: playerID, group: isPitcher ? "pitching" : "hitting", year: viewedYear)
         let hasCurrentYearGames = (currentYearStats?.gamesPlayed ?? 0) > 0
         let isFirstCallupThisSeason = !hasCurrentYearGames && !hasAnyCallupInCurrentYear(from: info, beforeDate: dateStr)
 
@@ -242,6 +245,7 @@ class TrackerViewModel: ObservableObject {
                 guard isRegularSeason(date) else { return false }
                 return date < beforeDate
             }
+            .sorted { ($0.date ?? "") < ($1.date ?? "") }
             .compactMap { $0.date.map { formatCallupDate($0) } }
             .reversed()
             .prefix(3)
@@ -255,7 +259,7 @@ class TrackerViewModel: ObservableObject {
     // transactions, and including them causes bucket/history disagreements.
     private func hasAnyCallupInCurrentYear(from info: PlayerInfo, beforeDate: String) -> Bool {
         guard let txns = info.transactions else { return false }
-        let currentYear = String(Calendar.current.component(.year, from: Date()))
+        let viewedYear = String(beforeDate.prefix(4))
         return txns.contains { txn in
             guard let code = txn.typeCode, code == "CU" else { return false }
             guard let toID = txn.toTeam?.id, MLBAPIClient.mlbTeamIDs.contains(toID) else { return false }
@@ -263,23 +267,23 @@ class TrackerViewModel: ObservableObject {
             // where fromTeam is nil — we can't tell if it's a trade or a callup.
             guard let fromID = txn.fromTeam?.id,
                   !MLBAPIClient.mlbTeamIDs.contains(fromID) else { return false }
-            guard let date = txn.date, date.hasPrefix(currentYear) else { return false }
+            guard let date = txn.date, date.hasPrefix(viewedYear) else { return false }
             guard isRegularSeason(date) else { return false }
             return date < beforeDate
         }
     }
 
-    // Regular season: last week of March through first week of October
+    // Regular season: last week of March through first week of October.
+    // Parse date string directly to avoid DateFormatter allocation on every call.
     private func isRegularSeason(_ dateStr: String) -> Bool {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        guard let date = formatter.date(from: dateStr) else { return false }
-        let cal = Calendar.current
-        let month = cal.component(.month, from: date)
-        let day = cal.component(.day, from: date)
+        // Expected format: "yyyy-MM-dd" — parse month and day from fixed positions.
+        let parts = dateStr.split(separator: "-")
+        guard parts.count == 3,
+              let month = Int(parts[1]),
+              let day   = Int(parts[2]) else { return false }
         if month >= 4 && month <= 9 { return true }
-        if month == 3 && day >= 25 { return true }
+        if month == 3 && day >= 25  { return true }
+        if month == 10 && day <= 7  { return true }
         return false
     }
 

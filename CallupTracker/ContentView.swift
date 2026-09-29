@@ -127,11 +127,11 @@ struct ContentView: View {
 
     @ViewBuilder
     private func tieredCallupList(_ cards: [PlayerCard]) -> some View {
-        let debut          = cards.filter { $0.callupBucket == .mlbDebut }.sorted { $0.name < $1.name }
-        let firstThisYear  = cards.filter { $0.callupBucket == .firstCallupThisYear }.sorted { $0.name < $1.name }
-        let alreadyThisYear = cards.filter { $0.callupBucket == .alreadyCalledUpThisYear }.sorted { $0.name < $1.name }
-        let notEligible    = cards.filter { $0.callupBucket == .notEligible }.sorted { $0.name < $1.name }
-        let rateLimited    = cards.filter { $0.callupBucket == .brefRateLimited }.sorted { $0.name < $1.name }
+        let debut           = cards.filter { $0.callupBucket == .mlbDebut }
+        let firstThisYear   = cards.filter { $0.callupBucket == .firstCallupThisYear }
+        let alreadyThisYear = cards.filter { $0.callupBucket == .alreadyCalledUpThisYear }
+        let notEligible     = cards.filter { $0.callupBucket == .notEligible }
+        let rateLimited     = cards.filter { $0.callupBucket == .brefRateLimited }
 
         #if os(iOS)
         if horizontalSizeClass == .compact {

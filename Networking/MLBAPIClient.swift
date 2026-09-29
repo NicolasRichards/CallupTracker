@@ -76,8 +76,7 @@ struct MLBAPIClient: Sendable {
     /// Returns the current-season StatLine for a player (MLB regular season only).
     /// Games played > 0 means the player has appeared in an MLB game this year,
     /// which is a reliable signal that they have been on the active roster.
-    func fetchCurrentYearStats(playerID: Int, group: String) async throws -> StatLine? {
-        let year = Calendar.current.component(.year, from: Date())
+    func fetchCurrentYearStats(playerID: Int, group: String, year: Int) async throws -> StatLine? {
         let urlString = "\(baseURL)/people/\(playerID)/stats?stats=season&season=\(year)&group=\(group)&sportId=1"
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
         let (data, response) = try await URLSession.shared.data(from: url)
