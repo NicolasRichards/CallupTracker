@@ -29,7 +29,3 @@ The owner runs Claude Code locally on a Mac, in this folder, and opens the proje
 - The app was once rejected under Guideline 4.2 as a replica of a web service; the widget, notifications and call-up history were added in response. Keep native features when trimming.
 - Version bumps are their own commits, titled like `Bump to 1.14 (25)`. The owner archives and uploads from Xcode.
 - The repo is public on purpose (GitHub Pages hosts the privacy page), so never commit secrets.
-
-## Known doc drift
-
-`README.md` is titled "MLB Callups" and lists Xcode 15, Swift 5.9 and iOS 16 / macOS 13. The project targets iOS 17 / macOS 14 with Swift 6 and default MainActor isolation. Trust the project file, and fix the README when touching it.
