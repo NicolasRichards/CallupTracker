@@ -111,12 +111,12 @@ class TrackerViewModel: ObservableObject {
         }
 
         // SE transactions can mean a true active-roster callup OR just a 40-man addition.
-        // Verify by fetching the live active roster for each team that has SE transactions.
+        // Verify by fetching the active roster as of the viewed date for each team that has SE transactions.
         // Batch by team — typically 0–2 teams per day — so at most a couple of extra calls.
         let seTeamIDs = Set(unique.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
         var activeRosters: [Int: Set<Int>] = [:]
         for teamID in seTeamIDs {
-            activeRosters[teamID] = (try? await api.fetchActiveRosterIDs(teamID: teamID)) ?? []
+            activeRosters[teamID] = (try? await api.fetchActiveRosterIDs(teamID: teamID, date: dateStr)) ?? []
         }
 
         let confirmed = unique.filter { txn in
@@ -155,11 +155,15 @@ class TrackerViewModel: ObservableObject {
         let posName = info.primaryPosition?.name ?? posAbbr
         let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
 
+        // Stats count only games before the viewed date, so a debut on a past date
+        // (or today, once the game ends) isn't bucketed by games played since.
+        let statsThrough = MLBAPIClient.dayBefore(dateStr)
+
         var displayHitting: DisplayHittingStats? = nil
         var displayPitching: DisplayPitchingStats? = nil
 
         if isPitcher {
-            let raw = try await api.fetchCareerPitching(playerID: playerID)
+            let raw = try await api.fetchCareerPitching(playerID: playerID, through: statsThrough)
             if let raw {
                 displayPitching = DisplayPitchingStats(
                     games: raw.gamesPlayed ?? 0,
@@ -172,7 +176,7 @@ class TrackerViewModel: ObservableObject {
                 )
             }
         } else {
-            let raw = try await api.fetchCareerHitting(playerID: playerID)
+            let raw = try await api.fetchCareerHitting(playerID: playerID, through: statsThrough)
             if let raw {
                 displayHitting = DisplayHittingStats(
                     games: raw.gamesPlayed ?? 0,
@@ -191,7 +195,7 @@ class TrackerViewModel: ObservableObject {
         // Use the year from dateStr (not Date()) so historical browsing works correctly.
         // Fallback: CU transaction check for players called up today but not yet in a game.
         let viewedYear = Int(dateStr.prefix(4)) ?? Calendar.current.component(.year, from: Date())
-        let currentYearStats = try? await api.fetchCurrentYearStats(playerID: playerID, group: isPitcher ? "pitching" : "hitting", year: viewedYear)
+        let currentYearStats = try? await api.fetchCurrentYearStats(playerID: playerID, group: isPitcher ? "pitching" : "hitting", year: viewedYear, through: statsThrough)
         let hasCurrentYearGames = (currentYearStats?.gamesPlayed ?? 0) > 0
         let isFirstCallupThisSeason = !hasCurrentYearGames && !hasAnyCallupInCurrentYear(from: info, beforeDate: dateStr)
 

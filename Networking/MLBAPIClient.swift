@@ -49,16 +49,53 @@ struct MLBAPIClient: Sendable {
 
     // MARK: - Career Stats
 
-    func fetchCareerHitting(playerID: Int) async throws -> StatLine? {
-        try await fetchCareerStats(playerID: playerID, group: "hitting")
+    /// Career MLB stats. With `through`, only games up to and including that
+    /// "yyyy-MM-dd" date count, so a past date's card isn't shaped by games played since.
+    func fetchCareerHitting(playerID: Int, through: String? = nil) async throws -> StatLine? {
+        try await fetchStats(playerID: playerID, group: "hitting", from: through == nil ? nil : "1900-01-01", through: through)
     }
 
-    func fetchCareerPitching(playerID: Int) async throws -> StatLine? {
-        try await fetchCareerStats(playerID: playerID, group: "pitching")
+    func fetchCareerPitching(playerID: Int, through: String? = nil) async throws -> StatLine? {
+        try await fetchStats(playerID: playerID, group: "pitching", from: through == nil ? nil : "1900-01-01", through: through)
     }
 
-    private func fetchCareerStats(playerID: Int, group: String) async throws -> StatLine? {
-        let urlString = "\(baseURL)/people/\(playerID)/stats?stats=career&group=\(group)&sportId=1"
+    // MARK: - Current-Year Stats
+
+    /// Returns the season StatLine for a player (MLB regular season only), optionally
+    /// limited to games through `through`. Games played > 0 means the player has
+    /// appeared in an MLB game that year, a reliable signal of active-roster time.
+    func fetchCurrentYearStats(playerID: Int, group: String, year: Int, through: String? = nil) async throws -> StatLine? {
+        guard let through else {
+            return try await fetchStats(playerID: playerID, group: group, season: year)
+        }
+        let start = "\(year)-01-01"
+        guard through >= start else { return nil }
+        return try await fetchStats(playerID: playerID, group: group, from: start, through: through)
+    }
+
+    /// The "yyyy-MM-dd" date before `dateStr`, or nil if it doesn't parse.
+    static func dayBefore(_ dateStr: String) -> String? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = calendar.timeZone
+        guard let date = f.date(from: dateStr),
+              let prior = calendar.date(byAdding: .day, value: -1, to: date) else { return nil }
+        return f.string(from: prior)
+    }
+
+    private func fetchStats(playerID: Int, group: String, season: Int? = nil,
+                            from: String? = nil, through: String? = nil) async throws -> StatLine? {
+        var urlString = "\(baseURL)/people/\(playerID)/stats?group=\(group)&sportId=1"
+        if let through, let from {
+            urlString += "&stats=byDateRange&startDate=\(from)&endDate=\(through)"
+        } else if let season {
+            urlString += "&stats=season&season=\(season)"
+        } else {
+            urlString += "&stats=career"
+        }
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
         let (data, response) = try await URLSession.shared.data(from: url)
         try validateResponse(response)
@@ -68,32 +105,20 @@ struct MLBAPIClient: Sendable {
         if let mlbRegular = firstGroup.splits.first(where: { $0.sport?.id == 1 && $0.gameType == "R" }) {
             return mlbRegular.stat
         }
-        return firstGroup.splits.first?.stat
-    }
-
-    // MARK: - Current-Year Stats
-
-    /// Returns the current-season StatLine for a player (MLB regular season only).
-    /// Games played > 0 means the player has appeared in an MLB game this year,
-    /// which is a reliable signal that they have been on the active roster.
-    func fetchCurrentYearStats(playerID: Int, group: String, year: Int) async throws -> StatLine? {
-        let urlString = "\(baseURL)/people/\(playerID)/stats?stats=season&season=\(year)&group=\(group)&sportId=1"
-        guard let url = URL(string: urlString) else { throw APIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
-        try validateResponse(response)
-        let groups = try JSONDecoder().decode(StatsResponse.self, from: data).stats
-        guard let firstGroup = groups.first else { return nil }
-        if let mlbRegular = firstGroup.splits.first(where: { $0.sport?.id == 1 && $0.gameType == "R" }) {
-            return mlbRegular.stat
+        // byDateRange returns one split per team plus an all-teams total (sport id 0).
+        if let total = firstGroup.splits.first(where: { $0.sport?.id == 0 }) {
+            return total.stat
         }
         return firstGroup.splits.first?.stat
     }
 
     // MARK: - Active Roster
 
-    /// Returns the set of player IDs currently on the active 26-man roster for a team.
-    func fetchActiveRosterIDs(teamID: Int) async throws -> Set<Int> {
-        let urlString = "\(baseURL)/teams/\(teamID)/roster?rosterType=active"
+    /// Returns the set of player IDs on the active 26-man roster for a team,
+    /// as of `date` ("yyyy-MM-dd") when given, otherwise now.
+    func fetchActiveRosterIDs(teamID: Int, date: String? = nil) async throws -> Set<Int> {
+        var urlString = "\(baseURL)/teams/\(teamID)/roster?rosterType=active"
+        if let date { urlString += "&date=\(date)" }
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
         let (data, response) = try await URLSession.shared.data(from: url)
         try validateResponse(response)

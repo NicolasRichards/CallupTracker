@@ -47,7 +47,7 @@ nonisolated enum CallupRules {
         .init(id: 142, name: "Minnesota Twins",        abbreviation: "MIN"),
         .init(id: 121, name: "New York Mets",          abbreviation: "NYM"),
         .init(id: 147, name: "New York Yankees",       abbreviation: "NYY"),
-        .init(id: 133, name: "Oakland Athletics",      abbreviation: "OAK"),
+        .init(id: 133, name: "Athletics",              abbreviation: "ATH"),
         .init(id: 143, name: "Philadelphia Phillies",  abbreviation: "PHI"),
         .init(id: 134, name: "Pittsburgh Pirates",     abbreviation: "PIT"),
         .init(id: 135, name: "San Diego Padres",       abbreviation: "SD"),
