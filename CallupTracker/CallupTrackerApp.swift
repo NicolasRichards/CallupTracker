@@ -14,16 +14,16 @@ struct CallupTrackerApp: App {
         #if os(iOS)
         NotificationManager.shared.registerBackgroundTask()
         #endif
+        TipJar.shared.startListening()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .task { await TipJar.shared.listenForTransactions() }
                 .onAppear {
                     #if os(iOS)
                     NotificationManager.shared.requestPermission()
-                    NotificationManager.shared.scheduleNextRefresh()
+                    Task { await NotificationManager.shared.scheduleRefreshIfNeeded() }
                     #endif
                 }
         }

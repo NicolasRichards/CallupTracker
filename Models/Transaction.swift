@@ -34,7 +34,7 @@ extension Transaction {
     ///
     /// The rule itself lives in CallupRules so the app, the background refresh,
     /// and the widget all apply exactly the same test.
-    var isLikelyCallup: Bool {
+    nonisolated var isLikelyCallup: Bool {
         CallupRules.isLikelyCallup(typeCode: typeCode,
                                    toTeamID: toTeam?.id,
                                    fromTeamID: fromTeam?.id,

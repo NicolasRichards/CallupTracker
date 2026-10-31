@@ -68,27 +68,39 @@ struct AboutView: View {
                 Text("☕ Buy us a coffee?")
                     .font(.headline)
 
+                // Ask to Buy: StoreKit says nothing if the parent declines, so the
+                // tip buttons stay available under this note.
+                if tipJar.awaitingApproval && !tipJar.didTip {
+                    Text("Waiting for approval. Thank you!")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 if tipJar.didTip {
                     Text("Thank you so much. 💛")
                         .font(.subheadline)
                         .foregroundStyle(.tint)
                         .padding(.vertical, 8)
-                } else if tipJar.awaitingApproval {
-                    Text("Waiting for approval. Thank you!")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 8)
-                } else if tipJar.loadFailed {
+                } else if tipJar.products.isEmpty && tipJar.loadFailed {
                     Text("Tip options couldn't load right now.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
+                    retryButton
                 } else if tipJar.products.isEmpty {
                     ProgressView()
                         .padding(.vertical, 12)
                 } else {
                     ForEach(tipJar.products, id: \.id) { product in
                         tipRow(balls: ballCount(for: product), product: product)
+                    }
+                    if tipJar.loadFailed {
+                        retryButton
+                    }
+                    if tipJar.purchaseFailed {
+                        Text("The tip didn't go through. Please try again.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -114,6 +126,14 @@ struct AboutView: View {
                 .buttonStyle(.bordered)
             }
         }
+    }
+
+    private var retryButton: some View {
+        Button("Retry") {
+            Task { await tipJar.load() }
+        }
+        .buttonStyle(.bordered)
+        .disabled(tipJar.isLoading)
     }
 
     private func tipRow(balls: Int, product: Product) -> some View {

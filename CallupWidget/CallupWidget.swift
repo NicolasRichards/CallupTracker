@@ -14,6 +14,8 @@ struct CallupEntry: TimelineEntry {
     let date: Date
     let callups: [CallupItem]
     let fetchFailed: Bool
+    /// Some call-ups couldn't be checked, so the list may be missing players.
+    var isIncomplete = false
 }
 
 struct CallupItem: Identifiable {
@@ -47,224 +49,83 @@ struct Provider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<CallupEntry>) -> Void) {
         Task {
             let entry = await fetchTodayEntry()
-
-            let nextUpdate: Date
-            if entry.fetchFailed || entry.callups.isEmpty {
-                // Retry in 30 minutes if we got nothing
-                nextUpdate = Date(timeIntervalSinceNow: 30 * 60)
-            } else {
-                // Refresh at 6 AM tomorrow once we have data
-                var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
-                components.day = (components.day ?? 0) + 1
-                components.hour = 6
-                components.minute = 0
-                nextUpdate = Calendar.current.date(from: components) ?? Date(timeIntervalSinceNow: 8 * 3600)
-            }
-
-            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+            let minutes = await refreshMinutes(after: entry)
+            completion(Timeline(entries: [entry], policy: .after(Date(timeIntervalSinceNow: minutes * 60))))
         }
     }
 
-    private func fetchTodayEntry() async -> CallupEntry {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        let todayStr = f.string(from: .now)
+    private static let api: MLBAPIClient = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15
+        return MLBAPIClient(session: URLSession(configuration: config))
+    }()
 
-        // Prefer the pre-filtered list saved by the main app (exact eligibility match)
-        if let shared = loadShared(for: todayStr) {
-            let items = shared.players.map { CallupItem(id: $0.id, name: $0.name, team: $0.team) }
-            return CallupEntry(date: .now, callups: items, fetchFailed: false)
+    private static let retryCountKey = "widgetRetryCount"
+
+    /// Hourly in season so later call-ups appear (about 24 reloads a day, inside
+    /// WidgetKit's budget); after a failure, 30 minutes doubling up to 4 hours;
+    /// every 6 hours out of season.
+    private func refreshMinutes(after entry: CallupEntry) async -> Double {
+        let defaults = UserDefaults.standard
+        let retries = entry.fetchFailed || entry.isIncomplete
+            ? defaults.integer(forKey: Self.retryCountKey) + 1 : 0
+        defaults.set(retries, forKey: Self.retryCountKey)
+
+        if await SeasonCalendar.shared.isInSeason(CallupDates.today(), api: Self.api) == false {
+            return 6 * 60
+        }
+        guard retries > 0 else { return 60 }
+        return Double(30 << (min(retries, 4) - 1))
+    }
+
+    private func fetchTodayEntry() async -> CallupEntry {
+        let todayStr = CallupDates.today()
+
+        // Prefer the list the main app saved (Baseball Reference eligibility)
+        // while it's recent and complete.
+        let shared = SharedCallupData.load(for: todayStr)
+        if let shared, shared.isFresh {
+            return CallupEntry(date: .now, callups: items(from: shared), fetchFailed: false)
         }
 
-        // Fall back to raw API fetch if app hasn't run today yet
         do {
-            let items = try await fetchCallups(for: todayStr)
-            return CallupEntry(date: .now, callups: items, fetchFailed: false)
+            return try await fetchEntry(for: todayStr, judgedBy: shared)
         } catch {
+            // The app's older list beats nothing.
+            if let shared {
+                return CallupEntry(date: .now, callups: items(from: shared), fetchFailed: false, isIncomplete: true)
+            }
             return CallupEntry(date: .now, callups: [], fetchFailed: true)
         }
     }
 
-    private func loadShared(for dateStr: String) -> SharedWidgetData? {
-        guard let defaults = UserDefaults(suiteName: "group.NickRichards.MLBCallups"),
-              let data = defaults.data(forKey: "todayCallups"),
-              let shared = try? JSONDecoder().decode(SharedWidgetData.self, from: data),
-              shared.date == dateStr
-        else { return nil }
-        return shared
+    private func items(from shared: SharedCallupData) -> [CallupItem] {
+        shared.players.map { CallupItem(id: $0.id, name: $0.name, team: $0.team) }
     }
 
-    private func fetchCallups(for dateStr: String) async throws -> [CallupItem] {
-        let urlStr = "https://statsapi.mlb.com/api/v1/transactions?startDate=\(dateStr)&endDate=\(dateStr)"
-        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+    /// The same pipeline background refresh uses: confirmed call-ups, then the
+    /// MLB rookie-limit heuristic, since a widget can't reach Baseball Reference
+    /// inside its time budget. Players the app already judged keep its verdict;
+    /// the heuristic only judges call-ups new since the app's last save.
+    private func fetchEntry(for dateStr: String, judgedBy shared: SharedCallupData?) async throws -> CallupEntry {
+        let day = try await CallupFeed.confirmedCallups(on: dateStr, api: Self.api)
 
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = 15
-        let session = URLSession(configuration: config)
-        let (data, response) = try await session.data(from: url)
-
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
+        let appEligible = shared.map(items(from:)) ?? []
+        let judgedIDs = Set(appEligible.map(\.id)).union(shared?.notEligibleIDs ?? [])
+        let unjudged = day.callups.filter { txn in
+            guard let id = txn.person?.id else { return false }
+            return !judgedIDs.contains(id)
         }
-
-        let decoded = try JSONDecoder().decode(WidgetTransactionsResponse.self, from: data)
-
-        var seen = Set<Int>()
-        let callups = decoded.transactions
-            .filter { txn in
-                // Same test the app applies, including the description fallback
-                // for transactions the API returns without a fromTeam. The old
-                // copy here rejected those, so the widget silently dropped
-                // call-ups the app was showing.
-                guard CallupRules.isLikelyCallup(typeCode: txn.typeCode,
-                                                 toTeamID: txn.toTeam?.id,
-                                                 fromTeamID: txn.fromTeam?.id,
-                                                 description: txn.description) else { return false }
-                guard let id = txn.person?.id, !seen.contains(id) else { return false }
-                seen.insert(id)
-                return true
-            }
-
-        // SE transactions can be 40-man-only additions. Verify against the live
-        // active roster (mirrors fetchCallups in TrackerViewModel) so the widget
-        // never shows a player the main app would exclude.
-        let seTeamIDs = Set(callups.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
-        var activeRosters: [Int: Set<Int>] = [:]
-        for teamID in seTeamIDs {
-            if let ids = try? await fetchActiveRosterIDs(teamID: teamID, session: session) {
-                activeRosters[teamID] = ids
-            }
+        let rookies = await CallupFeed.rookieEligible(unjudged, on: dateStr, api: Self.api)
+        let newItems = rookies.callups.compactMap { txn -> CallupItem? in
+            guard let id = txn.person?.id, let name = txn.person?.fullName else { return nil }
+            return CallupItem(id: id, name: name, team: txn.toTeam?.name ?? "")
         }
-        let verified = callups.filter { txn in
-            guard txn.typeCode == "SE",
-                  let teamID = txn.toTeam?.id,
-                  let playerID = txn.person?.id else {
-                return true  // CU — always an active roster callup
-            }
-            return activeRosters[teamID]?.contains(playerID) == true
-        }
-
-        // Keep rookie-eligible players only. The app itself defers to Baseball
-        // Reference, which a widget cannot reach inside its time budget, so this
-        // fallback shares the MLB rookie-limit heuristic with background refresh.
-        var items: [CallupItem] = []
-        for txn in verified {
-            guard let id = txn.person?.id, let name = txn.person?.fullName else { continue }
-            let eligible = (try? await isRookieEligible(playerID: id, session: session)) ?? true
-            if eligible {
-                items.append(CallupItem(id: id, name: name, team: txn.toTeam?.name ?? ""))
-            }
-        }
-        return items.sorted { $0.name < $1.name }
+        return CallupEntry(date: .now,
+                           callups: (appEligible + newItems).sorted { $0.name < $1.name },
+                           fetchFailed: false,
+                           isIncomplete: day.isIncomplete || !rookies.failedIDs.isEmpty)
     }
-
-    private func fetchActiveRosterIDs(teamID: Int, session: URLSession) async throws -> Set<Int> {
-        let urlStr = "https://statsapi.mlb.com/api/v1/teams/\(teamID)/roster?rosterType=active"
-        guard let url = URL(string: urlStr) else { return [] }
-        let (data, _) = try await session.data(from: url)
-        let decoded = try JSONDecoder().decode(WidgetRosterResponse.self, from: data)
-        return Set(decoded.roster.map { $0.person.id })
-    }
-
-    /// Shares NotificationManager's heuristic via CallupRules. Errs on the side
-    /// of showing the player when the lookup fails.
-    private func isRookieEligible(playerID: Int, session: URLSession) async throws -> Bool {
-        func careerStat(group: String) async throws -> WidgetStatLine? {
-            let urlStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)/stats?stats=career&group=\(group)&sportId=1"
-            guard let url = URL(string: urlStr) else { return nil }
-            let (data, _) = try await session.data(from: url)
-            let decoded = try JSONDecoder().decode(WidgetStatsResponse.self, from: data)
-            // Prefer the MLB regular-season split to exclude postseason IP/ABs,
-            // which would overstate career totals and incorrectly block rookie-eligible players.
-            let splits = decoded.stats.first?.splits ?? []
-            return splits.first(where: { $0.gameType == "R" })?.stat ?? splits.first?.stat
-        }
-
-        let infoStr = "https://statsapi.mlb.com/api/v1/people/\(playerID)"
-        guard let infoURL = URL(string: infoStr) else { return true }
-        let (infoData, _) = try await session.data(from: infoURL)
-        let info = try JSONDecoder().decode(WidgetPeopleResponse.self, from: infoData)
-        let posAbbr = info.people.first?.primaryPosition?.abbreviation ?? ""
-        let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
-
-        if isPitcher {
-            let stat = try await careerStat(group: "pitching")
-            return CallupRules.passesRookieLimits(
-                isPitcher: true,
-                careerInningsPitched: stat?.inningsPitched,
-                careerAtBats: nil)
-        } else {
-            let stat = try await careerStat(group: "hitting")
-            return CallupRules.passesRookieLimits(
-                isPitcher: false,
-                careerInningsPitched: nil,
-                careerAtBats: stat?.atBats)
-        }
-    }
-}
-
-// Shared container types (must match SharedCallupData.swift in the main app)
-private struct SharedWidgetData: Decodable {
-    let date: String
-    let players: [SharedWidgetPlayer]
-}
-private struct SharedWidgetPlayer: Decodable {
-    let id: Int
-    let name: String
-    let team: String
-}
-
-// Minimal decodable types (widget has no access to the main app module)
-private struct WidgetTransactionsResponse: Decodable {
-    let transactions: [WidgetTransaction]
-}
-private struct WidgetTransaction: Decodable {
-    let typeCode: String?
-    let person: WidgetPerson?
-    let toTeam: WidgetTeam?
-    let fromTeam: WidgetTeam?
-    let description: String?
-}
-private struct WidgetPeopleResponse: Decodable {
-    let people: [WidgetPersonDetail]
-}
-private struct WidgetPersonDetail: Decodable {
-    let primaryPosition: WidgetPosition?
-}
-private struct WidgetPosition: Decodable {
-    let abbreviation: String?
-}
-private struct WidgetStatsResponse: Decodable {
-    let stats: [WidgetStatGroup]
-}
-private struct WidgetStatGroup: Decodable {
-    let splits: [WidgetStatSplit]
-}
-private struct WidgetStatSplit: Decodable {
-    let gameType: String?
-    let stat: WidgetStatLine?
-}
-private struct WidgetRosterResponse: Decodable {
-    let roster: [WidgetRosterEntry]
-}
-private struct WidgetRosterEntry: Decodable {
-    let person: WidgetRosterPerson
-}
-private struct WidgetRosterPerson: Decodable {
-    let id: Int
-}
-private struct WidgetStatLine: Decodable {
-    let atBats: Int?
-    let inningsPitched: String?
-}
-private struct WidgetPerson: Decodable {
-    let id: Int
-    let fullName: String?
-}
-private struct WidgetTeam: Decodable {
-    let id: Int
-    let name: String?
 }
 
 // MARK: - Views
@@ -282,12 +143,10 @@ struct CallupWidgetEntryView: View {
 
     private var smallView: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("Callups", systemImage: "figure.baseball")
-                .font(.caption2.bold())
-                .foregroundStyle(.secondary)
+            header("Callups")
             Spacer()
             if entry.callups.isEmpty {
-                Text(entry.fetchFailed ? "Tap to refresh" : "None today")
+                Text(entry.fetchFailed || entry.isIncomplete ? "Tap to refresh" : "None today")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -307,14 +166,25 @@ struct CallupWidgetEntryView: View {
         .padding(12)
     }
 
+    /// The title, with a warning mark when the list may be missing players.
+    private func header(_ title: String) -> some View {
+        HStack(spacing: 4) {
+            Label(title, systemImage: "figure.baseball")
+            if entry.isIncomplete && !entry.callups.isEmpty {
+                Image(systemName: "exclamationmark.triangle")
+                    .accessibilityLabel("May be incomplete")
+            }
+        }
+        .font(.caption2.bold())
+        .foregroundStyle(.secondary)
+    }
+
     private var mediumView: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Label("Today's Callups", systemImage: "figure.baseball")
-                .font(.caption2.bold())
-                .foregroundStyle(.secondary)
+            header("Today's Callups")
             if entry.callups.isEmpty {
                 Spacer()
-                Text(entry.fetchFailed ? "Could not load — tap to retry" : "No rookie callups today")
+                Text(entry.fetchFailed || entry.isIncomplete ? "Could not load — tap to retry" : "No rookie callups today")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -347,7 +217,7 @@ struct CallupWidgetEntryView: View {
 // MARK: - Widget Declaration
 
 struct CallupWidget: Widget {
-    let kind: String = "CallupWidget"
+    let kind: String = SharedCallupData.widgetKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in

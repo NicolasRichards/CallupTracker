@@ -31,14 +31,19 @@ struct ContentView: View {
         VStack(spacing: 0) {
             dateNavBar
             rateLimitBanner
+            incompleteBanner
             Divider()
             contentArea
         }
         #if os(macOS)
         .frame(minWidth: 600, minHeight: 500)
         #endif
-        .onChange(of: scenePhase, initial: true) { _, phase in
-            if phase == .active { viewModel.loadCards() }
+        .onChange(of: scenePhase, initial: true) { oldPhase, phase in
+            if phase == .active {
+                viewModel.sceneBecameActive()
+            } else if oldPhase == .active {
+                viewModel.sceneLeftActive()
+            }
         }
         .sheet(isPresented: $showingAbout) {
             AboutView()
@@ -77,6 +82,28 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Incomplete Banner
+
+    @ViewBuilder
+    private var incompleteBanner: some View {
+        if viewModel.isIncomplete, case .loaded = viewModel.loadingState {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                Text("Some call-ups couldn't load, so this list may be incomplete.")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Button("Retry") { viewModel.loadCards() }
+                    .font(.caption.bold())
+                    .buttonStyle(.borderless)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.yellow.opacity(0.18))
+        }
+    }
+
     // MARK: - Content
 
     @ViewBuilder
@@ -103,6 +130,9 @@ struct ContentView: View {
                     title: "Could not load data",
                     message: message
                 )
+                Button("Retry") { viewModel.loadCards() }
+                    .buttonStyle(.bordered)
+                    .padding(.top, 16)
             }
 
         case .loaded:
@@ -215,7 +245,7 @@ struct ContentView: View {
             DatePicker(
                 "",
                 selection: $viewModel.selectedDate,
-                in: ...Date(),
+                in: ...viewModel.latestDate,
                 displayedComponents: .date
             )
             .labelsHidden()

@@ -70,8 +70,8 @@ nonisolated enum CallupRules {
     ///
     /// CU = recalled to the active 26-man roster, the player is already on the 40-man.
     /// SE = selected from the minors, which can be a true active call-up OR only a
-    ///      40-man addition. Callers that need certainty verify SE transactions
-    ///      against the live active roster.
+    ///      40-man addition. CallupFeed verifies SE transactions against the
+    ///      active roster as of the date.
     ///
     /// The description fallback matters: the API often omits `fromTeam`, and the
     /// widget's old filter rejected those outright while the app accepted them.
@@ -88,13 +88,14 @@ nonisolated enum CallupRules {
             return !mlbTeamIDs.contains(fromID)
         }
 
-        // No fromTeam in the API data. Accept only when the description mentions
-        // " from " and does not name an MLB club, so "recalled from Iowa Cubs"
-        // passes but "traded from Los Angeles Dodgers" does not.
-        guard let description else { return false }
-        let lower = description.lowercased()
-        guard lower.contains(" from ") else { return false }
-        return !clubNamesLowercased.contains { lower.contains($0) }
+        // No fromTeam in the API data. Descriptions open with the receiving club
+        // ("St. Louis Cardinals selected the contract of X from Memphis Redbirds."),
+        // so judge only the source after " from ": "from Iowa Cubs" passes but
+        // "from Los Angeles Dodgers" does not.
+        guard let description,
+              let fromRange = description.range(of: " from ", options: .caseInsensitive) else { return false }
+        let source = description[fromRange.upperBound...].lowercased()
+        return !clubNamesLowercased.contains { source.contains($0) }
     }
 
     // MARK: - Rookie eligibility

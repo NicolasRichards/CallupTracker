@@ -14,8 +14,11 @@ final class NotificationManager: Sendable {
     private init() {}
 
     static let taskIdentifier = "NickRichards.MLBCallups.refresh"
-    private static let notifiedKey = "notifiedCallupIDs"
-    private static let notifiedDateKey = "notifiedCallupDate"
+    /// Notified player IDs per feed date ("yyyy-MM-dd"), for today and yesterday.
+    private static let notifiedByDateKey = "notifiedCallupIDsByDate"
+    // Single-day keys from older builds, migrated on first read.
+    private static let legacyNotifiedKey = "notifiedCallupIDs"
+    private static let legacyNotifiedDateKey = "notifiedCallupDate"
 
     // MARK: - Permission
 
@@ -48,123 +51,109 @@ final class NotificationManager: Sendable {
         try? BGTaskScheduler.shared.submit(request)
     }
 
+    /// Called at launch. Resubmitting would replace the pending request and push
+    /// its start time back on every launch.
+    func scheduleRefreshIfNeeded() async {
+        let pending = await BGTaskScheduler.shared.pendingTaskRequests()
+        guard !pending.contains(where: { $0.identifier == Self.taskIdentifier }) else { return }
+        scheduleNextRefresh()
+    }
+
     // MARK: - Handler
 
     private func handleAppRefresh(task: BGAppRefreshTask) async {
         scheduleNextRefresh()
 
         let fetchTask = Task {
-            do {
-                let today = todayDateString()
-                let transactions = try await MLBAPIClient.shared.fetchTransactions(for: today)
-                // Same filter the app uses — excludes MLB→MLB trades and waiver claims
-                let callups = transactions.filter { $0.isLikelyCallup }
+            let today = CallupDates.today()
+            let yesterday = CallupDates.dayBefore(today)
+            var notified = loadNotified(today: today, yesterday: yesterday)
+                .filter { $0.key == today || $0.key == yesterday }
 
-                // Reset daily tracking when the date changes so totals stay accurate per day
-                let storedDate = UserDefaults.standard.string(forKey: Self.notifiedDateKey) ?? ""
-                if storedDate != today {
-                    UserDefaults.standard.removeObject(forKey: Self.notifiedKey)
-                    UserDefaults.standard.set(today, forKey: Self.notifiedDateKey)
+            // Yesterday has an entry only if it was checked while it was today; one
+            // more look catches call-ups posted after that last same-day refresh.
+            var dates = [today]
+            if let yesterday, notified[yesterday] != nil { dates.insert(yesterday, at: 0) }
+            if notified[today] == nil { notified[today] = [] }
+
+            var success = true
+            for date in dates {
+                do {
+                    let complete = try await notifyNewCallups(on: date, isToday: date == today, notified: &notified)
+                    if date != today && complete { notified[date] = nil }
+                } catch {
+                    success = false
                 }
-
-                let notifiedIDs = Set((UserDefaults.standard.array(forKey: Self.notifiedKey) as? [Int]) ?? [])
-                var seen = Set<Int>()
-                let newCallups = callups.filter { txn in
-                    guard let id = txn.person?.id, !notifiedIDs.contains(id), !seen.contains(id) else { return false }
-                    seen.insert(id)
-                    return true
-                }
-
-                // SE can mean a 40-man-only addition; verify against the live active
-                // roster (mirrors fetchCallups in TrackerViewModel) so we never
-                // notify about a player the app then doesn't show.
-                let seTeamIDs = Set(newCallups.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
-                var activeRosters: [Int: Set<Int>] = [:]
-                for teamID in seTeamIDs {
-                    activeRosters[teamID] = (try? await MLBAPIClient.shared.fetchActiveRosterIDs(teamID: teamID)) ?? []
-                }
-                let confirmed = newCallups.filter { txn in
-                    guard txn.typeCode == "SE",
-                          let teamID = txn.toTeam?.id,
-                          let playerID = txn.person?.id else {
-                        return true  // CU — always an active roster callup
-                    }
-                    return activeRosters[teamID]?.contains(playerID) == true
-                }
-
-                // Filter to rookie-eligible only (mirrors buildCard logic in TrackerViewModel)
-                let rookieCallups = await rookieEligible(from: confirmed)
-
-                if !rookieCallups.isEmpty {
-                    // Report the running daily total so the alert count matches what the app shows
-                    let totalToday = notifiedIDs.count + rookieCallups.count
-                    await send(callups: rookieCallups, totalToday: totalToday)
-                    let allNotified = notifiedIDs.union(rookieCallups.compactMap { $0.person?.id })
-                    UserDefaults.standard.set(Array(allNotified), forKey: Self.notifiedKey)
-                }
-
-                task.setTaskCompleted(success: true)
-            } catch {
-                task.setTaskCompleted(success: false)
             }
+            saveNotified(notified)
+            task.setTaskCompleted(success: success)
         }
 
         task.expirationHandler = { fetchTask.cancel() }
         await fetchTask.value
     }
 
-    // Returns only rookie-eligible players: pitchers with < 50 career IP, hitters with < 130 career AB.
-    private func rookieEligible(from callups: [Transaction]) async -> [Transaction] {
-        await withTaskGroup(of: Transaction?.self) { group in
-            for txn in callups {
-                group.addTask {
-                    guard let playerID = txn.person?.id,
-                          let info = try? await MLBAPIClient.shared.fetchPlayerInfo(playerID: playerID)
-                    else { return nil }
-
-                    let posAbbr = info.primaryPosition?.abbreviation ?? ""
-                    let isPitcher = CallupRules.pitcherPositions.contains(posAbbr)
-
-                    let eligible: Bool
-                    if isPitcher {
-                        let raw = try? await MLBAPIClient.shared.fetchCareerPitching(playerID: playerID)
-                        eligible = CallupRules.passesRookieLimits(
-                            isPitcher: true,
-                            careerInningsPitched: raw?.inningsPitched,
-                            careerAtBats: nil)
-                    } else {
-                        let raw = try? await MLBAPIClient.shared.fetchCareerHitting(playerID: playerID)
-                        eligible = CallupRules.passesRookieLimits(
-                            isPitcher: false,
-                            careerInningsPitched: nil,
-                            careerAtBats: raw?.atBats)
-                    }
-                    return eligible ? txn : nil
-                }
-            }
-            var result: [Transaction] = []
-            for await txn in group {
-                if let txn { result.append(txn) }
-            }
-            return result
+    /// Notifies about rookie call-ups on `date` that haven't been notified yet.
+    /// Returns false when a lookup failed, so the date is worth checking again;
+    /// players that couldn't be judged aren't marked notified.
+    private func notifyNewCallups(on date: String, isToday: Bool,
+                                  notified: inout [String: Set<Int>]) async throws -> Bool {
+        let alreadyNotified = notified[date] ?? []
+        let day = try await CallupFeed.confirmedCallups(on: date, api: .shared)
+        let newCallups = day.callups.filter { txn in
+            guard let id = txn.person?.id else { return false }
+            return !alreadyNotified.contains(id)
         }
+        let rookies = await CallupFeed.rookieEligible(newCallups, on: date, api: .shared)
+
+        if !rookies.callups.isEmpty {
+            // Report the running daily total so the alert count matches what the app shows
+            let total = alreadyNotified.count + rookies.callups.count
+            await send(callups: rookies.callups, total: total, isToday: isToday)
+        }
+        notified[date] = alreadyNotified.union(rookies.callups.compactMap { $0.person?.id })
+        return !day.isIncomplete && rookies.failedIDs.isEmpty
+    }
+
+    private func loadNotified(today: String, yesterday: String?) -> [String: Set<Int>] {
+        let defaults = UserDefaults.standard
+        var notified: [String: Set<Int>] = [:]
+        if let stored = defaults.dictionary(forKey: Self.notifiedByDateKey) as? [String: [Int]] {
+            notified = stored.mapValues(Set.init)
+        }
+        if defaults.string(forKey: Self.legacyNotifiedDateKey) != nil {
+            // The legacy date was device-local, which can be a day off the Eastern
+            // date, so file its IDs under both days rather than re-notify them.
+            let legacyIDs = (defaults.array(forKey: Self.legacyNotifiedKey) as? [Int]) ?? []
+            for date in [today, yesterday].compactMap({ $0 }) {
+                notified[date, default: []].formUnion(legacyIDs)
+            }
+            defaults.removeObject(forKey: Self.legacyNotifiedKey)
+            defaults.removeObject(forKey: Self.legacyNotifiedDateKey)
+        }
+        return notified
+    }
+
+    private func saveNotified(_ notified: [String: Set<Int>]) {
+        UserDefaults.standard.set(notified.mapValues { Array($0) }, forKey: Self.notifiedByDateKey)
     }
 
     // MARK: - Notification Delivery
 
-    private func send(callups: [Transaction], totalToday: Int) async {
+    private func send(callups: [Transaction], total: Int, isToday: Bool) async {
         let content = UNMutableNotificationContent()
+        let day = isToday ? "Today" : "Yesterday"
         if let name = callups[0].person?.fullName, let team = callups[0].toTeam?.name {
-            if totalToday == 1 {
-                content.title = "Rookie Called Up"
+            if total == 1 {
+                content.title = isToday ? "Rookie Called Up" : "Rookie Called Up Yesterday"
                 content.body = "\(name) called up to \(team)"
             } else {
-                content.title = "Rookie Callups Today"
+                content.title = "Rookie Callups \(day)"
                 content.body = "Includes \(name) — tap to see all"
             }
         } else {
-            content.title = "Rookie Callups Today"
-            content.body = "Tap to see today's rookie-eligible callups"
+            content.title = "Rookie Callups \(day)"
+            content.body = "Tap to see \(day.lowercased())'s rookie-eligible callups"
         }
         content.sound = .default
 
@@ -174,15 +163,6 @@ final class NotificationManager: Sendable {
             trigger: nil
         )
         try? await UNUserNotificationCenter.current().add(request)
-    }
-
-    // MARK: - Helpers
-
-    private func todayDateString() -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: Date())
     }
 }
 

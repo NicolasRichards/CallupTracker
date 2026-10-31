@@ -4,9 +4,11 @@ import Combine
 @MainActor
 class TrackerViewModel: ObservableObject {
 
-    @Published var selectedDate: Date = Date()
+    @Published var selectedDate: Date = CallupDates.localDate(of: CallupDates.today()) ?? Date()
     @Published var cards: [PlayerCard] = []
     @Published var loadingState: LoadingState = .idle
+    /// Some players or teams couldn't be loaded, so the list may be missing call-ups.
+    @Published var isIncomplete = false
     @Published var selectedTeamID: Int? = nil
     @Published var brefRateLimitUntil: Date? = nil
 
@@ -17,24 +19,25 @@ class TrackerViewModel: ObservableObject {
 
     private let api = MLBAPIClient.shared
     private var loadingTask: Task<Void, Never>?
+    private var wasAtTodayWhenLeftActive = true
+    private var lastCompleteLoad: (date: String, at: Date)?
 
-    var isAtToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
+    /// The feed's today (US Eastern) as a date-picker date, the latest selectable day.
+    var latestDate: Date {
+        CallupDates.localDate(of: CallupDates.today()) ?? Date()
     }
 
+    var isAtToday: Bool {
+        formattedDate >= CallupDates.today()
+    }
+
+    /// The API date for the day the picker shows.
     var formattedDate: String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        // POSIX locale: this feeds API URLs, so it must not depend on the
-        // device's calendar setting (Buddhist/Japanese calendars shift the year).
-        f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: selectedDate)
+        CallupDates.localDay(of: selectedDate)
     }
 
     var displayDate: String {
-        let f = DateFormatter()
-        f.dateStyle = .full
-        return f.string(from: selectedDate)
+        selectedDate.formatted(date: .complete, time: .omitted)
     }
 
     var selectedTeam: MLBTeam? {
@@ -60,12 +63,34 @@ class TrackerViewModel: ObservableObject {
         // loadCards() is triggered by ContentView's onChange(of: selectedDate)
     }
 
+    // MARK: - Scene Phase
+
+    func sceneLeftActive() {
+        wasAtTodayWhenLeftActive = isAtToday
+    }
+
+    /// Follows the date forward if the user was on today when the app went to
+    /// the background, and skips a refetch of a day that loaded moments ago.
+    func sceneBecameActive() {
+        if wasAtTodayWhenLeftActive && !isAtToday {
+            selectedDate = latestDate   // loadCards() runs from ContentView's onChange
+            return
+        }
+        if let last = lastCompleteLoad, last.date == formattedDate,
+           Date().timeIntervalSince(last.at) < 5 * 60 {
+            return
+        }
+        loadCards()
+    }
+
     // MARK: - Loading
 
     func loadCards() {
         loadingTask?.cancel()
         cards = []
         loadingState = .loading
+        isIncomplete = false
+        lastCompleteLoad = nil
         brefRateLimitUntil = nil   // cleared each load; re-set below if a 429 is encountered
         let dateStr = formattedDate
         let loadingToday = isAtToday
@@ -74,12 +99,24 @@ class TrackerViewModel: ObservableObject {
             do {
                 let result = try await fetchCallups(for: dateStr, isToday: loadingToday)
                 guard !Task.isCancelled else { return }
-                self.cards = result
-                self.loadingState = result.isEmpty ? .empty : .loaded
-                // Share eligible players with the widget
-                if Calendar.current.isDateInToday(self.selectedDate) {
+                self.cards = result.cards
+                self.isIncomplete = result.isIncomplete
+                if result.cards.isEmpty && result.isIncomplete {
+                    self.loadingState = .error("Couldn't load call-ups. Check your connection and try again.")
+                } else {
+                    self.loadingState = result.cards.isEmpty ? .empty : .loaded
+                }
+                // A rate-limited player is unjudged, so that list isn't complete either.
+                let complete = !result.isIncomplete && !result.cards.contains { $0.isBRefRateLimited }
+                if complete { self.lastCompleteLoad = (dateStr, Date()) }
+                if dateStr == CallupDates.today() {
                     // Widget only shows rookie-eligible players
-                    SharedCallupData.save(result.filter { $0.isRookieEligible }, for: dateStr)
+                    let players = result.cards.filter { $0.isRookieEligible }
+                        .map { SharedPlayer(id: $0.id, name: $0.name, team: $0.team) }
+                    let notEligibleIDs = result.cards
+                        .filter { $0.brefRookieStatus == .exceededRookieLimits }.map(\.id).sorted()
+                    SharedCallupData.save(players, notEligibleIDs: notEligibleIDs,
+                                          isComplete: complete, for: dateStr)
                 }
             } catch is CancellationError {
                 // User navigated away — ignore
@@ -98,51 +135,35 @@ class TrackerViewModel: ObservableObject {
 
     // MARK: - Pipeline
 
-    private func fetchCallups(for dateStr: String, isToday: Bool = true) async throws -> [PlayerCard] {
-        let transactions = try await api.fetchTransactions(for: dateStr)
+    /// Only a failed transactions request throws; a player whose details fail
+    /// to load is left out and the result is marked incomplete.
+    private func fetchCallups(for dateStr: String, isToday: Bool = true) async throws -> (cards: [PlayerCard], isIncomplete: Bool) {
+        let day = try await CallupFeed.confirmedCallups(on: dateStr, api: api)
 
-        let callups = transactions.filter { $0.isLikelyCallup }
-
-        var seen = Set<Int>()
-        let unique = callups.filter { txn in
-            guard let id = txn.person?.id, !seen.contains(id) else { return false }
-            seen.insert(id)
-            return true
-        }
-
-        // SE transactions can mean a true active-roster callup OR just a 40-man addition.
-        // Verify by fetching the active roster as of the viewed date for each team that has SE transactions.
-        // Batch by team — typically 0–2 teams per day — so at most a couple of extra calls.
-        let seTeamIDs = Set(unique.compactMap { $0.typeCode == "SE" ? $0.toTeam?.id : nil })
-        var activeRosters: [Int: Set<Int>] = [:]
-        for teamID in seTeamIDs {
-            activeRosters[teamID] = (try? await api.fetchActiveRosterIDs(teamID: teamID, date: dateStr)) ?? []
-        }
-
-        let confirmed = unique.filter { txn in
-            guard txn.typeCode == "SE",
-                  let teamID = txn.toTeam?.id,
-                  let playerID = txn.person?.id else {
-                return true  // CU — always an active roster callup, no verification needed
-            }
-            return activeRosters[teamID]?.contains(playerID) == true
-        }
-
-        return try await withThrowingTaskGroup(of: PlayerCard?.self) { group in
-            for (index, txn) in confirmed.enumerated() {
+        return await withTaskGroup(of: (card: PlayerCard?, failed: Bool).self) { group in
+            for (index, txn) in day.callups.enumerated() {
                 let brefDelay = isToday ? 0 : index
-                group.addTask { try await self.buildCard(from: txn, dateStr: dateStr, brefDelayIndex: brefDelay) }
+                group.addTask {
+                    do {
+                        return (try await self.buildCard(from: txn, dateStr: dateStr, brefDelayIndex: brefDelay), false)
+                    } catch {
+                        return (nil, true)
+                    }
+                }
             }
             var result: [PlayerCard] = []
-            for try await card in group {
-                if let card { result.append(card) }
+            var isIncomplete = day.isIncomplete
+            for await outcome in group {
+                if let card = outcome.card { result.append(card) }
+                if outcome.failed { isIncomplete = true }
             }
-            return result.sorted {
+            let sorted = result.sorted {
                 if $0.callupBucket.rawValue != $1.callupBucket.rawValue {
                     return $0.callupBucket.rawValue < $1.callupBucket.rawValue
                 }
                 return $0.name < $1.name
             }
+            return (sorted, isIncomplete)
         }
     }
 
@@ -157,7 +178,7 @@ class TrackerViewModel: ObservableObject {
 
         // Stats count only games before the viewed date, so a debut on a past date
         // (or today, once the game ends) isn't bucketed by games played since.
-        let statsThrough = MLBAPIClient.dayBefore(dateStr)
+        let statsThrough = CallupDates.dayBefore(dateStr)
 
         var displayHitting: DisplayHittingStats? = nil
         var displayPitching: DisplayPitchingStats? = nil
@@ -250,7 +271,7 @@ class TrackerViewModel: ObservableObject {
                 return date < beforeDate
             }
             .sorted { ($0.date ?? "") < ($1.date ?? "") }
-            .compactMap { $0.date.map { formatCallupDate($0) } }
+            .compactMap { $0.date.map { CallupDates.displayString(for: $0) } }
             .reversed()
             .prefix(3)
             .map { $0 }
@@ -289,17 +310,5 @@ class TrackerViewModel: ObservableObject {
         if month == 3 && day >= 25  { return true }
         if month == 10 && day <= 7  { return true }
         return false
-    }
-
-    private func formatCallupDate(_ dateStr: String) -> String {
-        let input = DateFormatter()
-        input.dateFormat = "yyyy-MM-dd"
-        input.locale = Locale(identifier: "en_US_POSIX")
-        let output = DateFormatter()
-        output.dateFormat = "MMM d, yyyy"
-        if let d = input.date(from: dateStr) {
-            return output.string(from: d)
-        }
-        return dateStr
     }
 }

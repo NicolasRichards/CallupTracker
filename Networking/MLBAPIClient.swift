@@ -18,6 +18,11 @@ struct MLBAPIClient: Sendable {
     static let shared = MLBAPIClient()
 
     private let baseURL = "https://statsapi.mlb.com/api/v1"
+    private let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
 
     /// Both derive from CallupRules, which the widget extension also compiles,
     /// so the app and the widget can never drift apart on club membership.
@@ -32,7 +37,7 @@ struct MLBAPIClient: Sendable {
     func fetchTransactions(for dateString: String) async throws -> [Transaction] {
         let urlString = "\(baseURL)/transactions?startDate=\(dateString)&endDate=\(dateString)"
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         try validateResponse(response)
         return try JSONDecoder().decode(TransactionsResponse.self, from: data).transactions
     }
@@ -42,7 +47,7 @@ struct MLBAPIClient: Sendable {
     func fetchPlayerInfo(playerID: Int) async throws -> PlayerInfo? {
         let urlString = "\(baseURL)/people/\(playerID)?hydrate=currentTeam,transactions"
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         try validateResponse(response)
         return try JSONDecoder().decode(PeopleResponse.self, from: data).people.first
     }
@@ -73,19 +78,6 @@ struct MLBAPIClient: Sendable {
         return try await fetchStats(playerID: playerID, group: group, from: start, through: through)
     }
 
-    /// The "yyyy-MM-dd" date before `dateStr`, or nil if it doesn't parse.
-    static func dayBefore(_ dateStr: String) -> String? {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = calendar.timeZone
-        guard let date = f.date(from: dateStr),
-              let prior = calendar.date(byAdding: .day, value: -1, to: date) else { return nil }
-        return f.string(from: prior)
-    }
-
     private func fetchStats(playerID: Int, group: String, season: Int? = nil,
                             from: String? = nil, through: String? = nil) async throws -> StatLine? {
         var urlString = "\(baseURL)/people/\(playerID)/stats?group=\(group)&sportId=1"
@@ -97,7 +89,7 @@ struct MLBAPIClient: Sendable {
             urlString += "&stats=career"
         }
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         try validateResponse(response)
         let groups = try JSONDecoder().decode(StatsResponse.self, from: data).stats
         guard let firstGroup = groups.first else { return nil }
@@ -120,10 +112,26 @@ struct MLBAPIClient: Sendable {
         var urlString = "\(baseURL)/teams/\(teamID)/roster?rosterType=active"
         if let date { urlString += "&date=\(date)" }
         guard let url = URL(string: urlString) else { throw APIError.invalidURL }
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         try validateResponse(response)
         let roster = try JSONDecoder().decode(RosterResponse.self, from: data)
         return Set(roster.roster.map { $0.person.id })
+    }
+
+    // MARK: - Season Dates
+
+    /// The first regular-season day through the last postseason day of `year`,
+    /// as "yyyy-MM-dd" strings.
+    func fetchSeasonDates(year: Int) async throws -> ClosedRange<String> {
+        let urlString = "\(baseURL)/seasons/\(year)?sportId=1"
+        guard let url = URL(string: urlString) else { throw APIError.invalidURL }
+        let (data, response) = try await session.data(from: url)
+        try validateResponse(response)
+        guard let season = try JSONDecoder().decode(SeasonsResponse.self, from: data).seasons.first,
+              let start = season.regularSeasonStartDate,
+              let end = season.postSeasonEndDate ?? season.regularSeasonEndDate,
+              start <= end else { throw APIError.invalidResponse }
+        return start...end
     }
 
     // MARK: - Headshot URL
@@ -152,6 +160,18 @@ private struct RosterEntry: Decodable {
 
 private struct RosterPerson: Decodable {
     let id: Int
+}
+
+// MARK: - Seasons Response
+
+private struct SeasonsResponse: Decodable {
+    let seasons: [Season]
+}
+
+private struct Season: Decodable {
+    let regularSeasonStartDate: String?
+    let regularSeasonEndDate: String?
+    let postSeasonEndDate: String?
 }
 
 // MARK: - Errors
